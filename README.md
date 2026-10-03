@@ -26,6 +26,8 @@ Cache có hai tầng:
 
 ## Cài đặt
 
+Hướng dẫn từng bước khi chuyển sang máy GPU: [docs/huong-dan-may-gpu.md](docs/huong-dan-may-gpu.md).
+
 ```bash
 conda create -n vidub python=3.11 && conda activate vidub
 pip install -e ".[server,dev]"           # đủ để chạy thử toàn bộ với backend giả lập

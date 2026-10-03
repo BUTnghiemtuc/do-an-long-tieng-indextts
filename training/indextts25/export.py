@@ -41,7 +41,7 @@ def export(ckpt_path: str, base_dir: str, out_dir: str, dtype: str = "keep", ind
     if dtype != "keep":
         state = {k: v.to(getattr(torch, dtype)) if v.is_floating_point() else v for k, v in state.items()}
     else:
-        raw = torch.load(base_gpt, map_location="cpu")
+        raw = torch.load(base_gpt, map_location="cpu", mmap=True)   # chỉ để đọc dtype, không nạp 3 GB vào RAM
         raw = raw.get("model", raw)
         ref = next(v for v in raw.values() if torch.is_tensor(v) and v.is_floating_point())
         state = {k: v.to(ref.dtype) if v.is_floating_point() else v for k, v in state.items()}
