@@ -1,0 +1,53 @@
+# Finetune IndexTTS 2.5 cho tiếng Việt — theo training_config.yaml của bản tiếng Đức
+# (sharrnah/index-tts-2.5-german), chỉ đổi ngôn ngữ và đường dẫn.
+#   python -m training.indextts25.train -c training/indextts25/config_vi.yaml
+
+index_tts_repo: third_party/index-tts      # commit đã đối chiếu: d9e41aa
+
+model:
+  config: checkpoints/IndexTTS-2.5/config.yaml
+  checkpoint: checkpoints/IndexTTS-2.5/gpt.pth
+
+data:
+  features: data/features/train            # prepare_features.py
+  train_pairs: data/features/train/pairs_train.jsonl
+  dev_features: data/features/dev
+  dev_pairs: data/features/dev/pairs_dev.jsonl
+  num_workers: 2
+
+train:
+  # --- giống bản Đức
+  lora_rank: 64
+  lora_alpha: 128.0
+  lora_dropout: 0.0
+  lora_layers: null                        # null = cả 24 lớp
+  train_text_embedding: true
+  train_output_heads: true
+  language: vi
+  language_initialization: en
+  language_initialization_noise: 0.0
+  language_learning_rate_multiplier: 5.0
+  batch_size: 8                            # GPU 24 GB: 4 x 8 thay vì 8 x 4 nếu thiếu VRAM
+  gradient_accumulation: 4                 # batch hiệu dụng 32
+  epochs: 3
+  max_steps: null                          # null = epochs x số bước mỗi epoch
+  learning_rate: 5.0e-5                    # Run 1: so với 2.0e-5
+  weight_decay: 0.01
+  warmup_steps: 1000
+  minimum_learning_rate_ratio: 0.08
+  gradient_clip: 1.0
+  precision: bf16
+  seed: 1234
+  text_loss_weight: 0.2
+  mel_loss_weight: 1.0
+  speaker_noise_std: 0.01
+  emotion_dropout: 0.1
+  # --- riêng
+  gradient_checkpointing: true
+
+run:
+  output_dir: runs/indextts25_vi
+  log_every: 50
+  eval_every: 1000                         # mỗi lần: loss dev + lưu checkpoint; chọn checkpoint theo CER dev
+  keep_checkpoints: 8
+  tensorboard: true

@@ -29,7 +29,7 @@ Cache có hai tầng:
 ```bash
 conda create -n vidub python=3.11 && conda activate vidub
 pip install -e ".[server,dev]"           # đủ để chạy thử toàn bộ với backend giả lập
-pytest                                    # 27 test, chạy trên CPU
+pytest                                    # 36 test, chạy trên CPU (test finetune cần third_party/index-tts)
 
 # Máy GPU NVIDIA:
 pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124
@@ -79,7 +79,7 @@ Giao diện hiện là một trang HTML/JS thuần ([server/static/index.html](s
 | Giai đoạn | Thư mục | Lệnh chính |
 | --- | --- | --- |
 | 1. Dữ liệu (đến 14/10) | [data_prep/](data_prep/) | `import_hf` → `filter` (duration, normalize, asr, quality, select) → `split` → `stats` |
-| 2. Finetune (đến 28/10) | [training/](training/) | [runbook](training/README.md), `extend_tokenizer.py`, `resize_embeddings.py` |
+| 2. Finetune IndexTTS 2.5 (đến 28/10) | [training/indextts25/](training/indextts25/) | [runbook](training/README.md): `prepare_features` → `train` → `export` |
 | 3. Pipeline (đến 1/11) | [vidub/](vidub/) | `vidub run` |
 | 4. Website (đến 13/11) | [server/](server/) | `uvicorn server.app:app` |
 | 5. Đánh giá (đến 18/11) | [eval/](eval/) | `eval_tts` (CER/WER, SS, UTMOS, ES, RTF), `eval_dubbing` (sai số thời lượng, nhất quán giọng, COMET-kiwi, CSV chấm tay) |

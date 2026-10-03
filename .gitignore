@@ -9,3 +9,4 @@ results/
 checkpoints/
 *.wav
 *.mp4
+third_party/

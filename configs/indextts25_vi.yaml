@@ -1,0 +1,25 @@
+# Pipeline dùng IndexTTS 2.5 đã finetune tiếng Việt (thư mục do training.indextts25.export tạo).
+#   vidub run clip.mp4 -c configs/gpu.yaml -c configs/indextts25_vi.yaml
+# Cần third_party/index-tts trong PYTHONPATH (hoặc pip install -e third_party/index-tts).
+synthesize:
+  backend: indextts
+  indextts:
+    entry: indextts.infer_v2_5:IndexTTS2
+    model_dir: checkpoints/IndexTTS-2.5-vi
+    cfg_path: checkpoints/IndexTTS-2.5-vi/config.yaml
+    use_bf16: true
+    lang: vi
+    text_frontend: vi          # giống hệt lúc train: data_prep.vi_normalize.tts_frontend
+    emo_alpha: 0.8
+    generation:                # như lúc chấm bản tiếng Đức
+      temperature: 0.7
+      top_p: 0.8
+      top_k: 30
+      num_beams: 1
+      repetition_penalty: 10.0
+
+align:
+  # IndexTTS 2.5 co giãn ở S2M (target_lengths = số frame x 1.72 x duration_factor), model card cho phép 0.5–2.0;
+  # giữ khoảng hẹp để giọng không bị méo.
+  duration_factor_min: 0.75
+  duration_factor_max: 1.25

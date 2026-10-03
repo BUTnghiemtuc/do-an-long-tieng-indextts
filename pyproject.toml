@@ -27,13 +27,16 @@ gpu = [
 llm = ["anthropic"]
 server = ["fastapi", "uvicorn[standard]", "python-multipart", "rq", "redis"]
 eval = ["transformers", "torchaudio"]
+# Finetune IndexTTS 2.5 (khớp phiên bản mà index-tts ghim)
+train = ["torch==2.8.*", "torchaudio==2.8.*", "transformers==4.52.1", "openai-whisper", "tiktoken",
+         "omegaconf", "tensorboard"]
 dev = ["pytest", "httpx"]
 
 [project.scripts]
 vidub = "vidub.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["vidub*", "server*", "data_prep*", "eval*"]
+include = ["vidub*", "server*", "data_prep*", "eval*", "training*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

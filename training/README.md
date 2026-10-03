@@ -1,66 +1,80 @@
-# Finetune IndexTTS cho tiếng Việt — runbook (1/10–31/10)
+# Finetune IndexTTS 2.5 cho tiếng Việt — runbook
 
-Chỉ finetune khối GPT (Text-to-Semantic) và thêm một hàng điều kiện ngôn ngữ `VI`. Semantic
-codec, S2M, BigVGAN và các conditioner giữ đóng băng. Hạn chốt mô hình là **28/10**.
+Kế hoạch chi tiết (lý do chọn module, dữ liệu, chi phí GPU) nằm trong tài liệu
+[Kế hoạch finetune IndexTTS 2.5 cho tiếng Việt](https://claude.ai/code/artifact/7366d741-b2d8-4944-b6e6-06a47ad8c5d1).
+Thư mục này là phần mã.
 
-Nhóm tác giả chưa công bố mã train, nên vòng lặp train lấy từ mã cộng đồng: nhánh
-JarodMica `training_v2` (`train_bpe.py`, `generate_gpt_pairs.py`, `train_gpt_v2.py`) và
-`training_config.yaml` của bản tiếng Đức. Thư mục này chỉ chứa phần dành riêng cho tiếng
-Việt; vòng lặp train không viết lại.
+| File | Việc |
+| --- | --- |
+| [indextts25/model.py](indextts25/model.py) | Dựng GPT (`UnifiedVoice`, chế độ `campplus` như `infer_v2_5.py`), gắn LoRA, forward + loss |
+| [indextts25/lora.py](indextts25/lora.py) | LoRA cho Conv1D của GPT-2, gộp ra đúng tên tensor gốc |
+| [indextts25/prepare_features.py](indextts25/prepare_features.py) | Trích trước semantic code, vector giọng CAMPPlus, vector cảm xúc, token văn bản (GPU) |
+| [indextts25/data.py](indextts25/data.py) | Dataset cặp giọng mẫu/câu đích, batch theo độ dài, tạo cặp cùng người nói |
+| [indextts25/train.py](indextts25/train.py) | Vòng train: bf16, tích luỹ gradient, warmup + cosine, chấm dev, lưu và chạy tiếp |
+| [indextts25/export.py](indextts25/export.py) | Gộp LoRA → `gpt.pth`, tạo thư mục model nạp thẳng bằng `IndexTTS2` của 2.5 |
+| [indextts25/config_vi.yaml](indextts25/config_vi.yaml) | Cấu hình, chép từ bản finetune tiếng Đức |
 
-## Tuần 1 (1–7/10): dựng khung và kiểm chứng
+## Những gì đã kiểm chứng (CPU, GPT tí hon, `pytest tests/test_indextts25.py`)
 
-1. Chạy baseline trên cùng 100 câu dev (cần `data/splits/dev_tts.jsonl`, xem `data_prep/`):
-   ```bash
-   python -m eval.eval_tts data/splits/dev_tts.jsonl --name indextts_goc   -c configs/gpu.yaml --set synthesize.indextts.model_dir=checkpoints/indextts ...
-   python -m eval.eval_tts data/splits/dev_tts.jsonl --name dinhthuan      -c configs/gpu.yaml
-   python -m eval.eval_tts data/splits/dev_tts.jsonl --name f5_vi          -c configs/f5_vi.yaml
-   python -m eval.eval_tts --compare results/tts/*/summary.json
-   ```
-   Kết quả của IndexTTS gốc chính là mốc "trước finetune".
-2. Đọc mã train cộng đồng, port sang 2.5 (codec 25 Hz, embedding ngôn ngữ).
-3. Overfit khoảng 1 giờ dữ liệu: loss phải giảm và suy luận phải ra tiếng Việt nghe được.
-   **Nếu tới 10/10 vẫn không đạt** → finetune IndexTTS2 bằng `training_v2` (đã được kiểm chứng).
+- Logit lúc train **trùng** logit của đường suy luận chính thức (`prepare_gpt_inputs` + `GPT2InferenceModel`), sai khác < 1e-4. Tức là thứ tự, vị trí và embedding ngôn ngữ ghép đúng như lúc model chạy thật.
+- Đệm batch không làm đổi loss.
+- Gộp LoRA cho ra đúng kết quả của model chưa gộp. Chỉ LoRA, embedding văn bản, hai head và bảng ngôn ngữ được train; nhánh speaker và emotion đứng yên.
+- Model tí hon học thuộc dữ liệu giả (độ chính xác dev > 90%).
+- Chạy tiếp từ checkpoint cho cùng kết quả với chạy liền một mạch.
+- Model sau export, nạp bằng `load_checkpoint` của IndexTTS, cho cùng logit.
 
-## Tuần 2 (8–14/10): tokenizer + dữ liệu
+Chưa kiểm chứng: chạy với trọng số thật của IndexTTS 2.5 (cần GPU). Bước 2 dưới đây là phép thử đó.
+
+## Chạy trên máy GPU thuê (Vast.ai / RunPod, RTX 4090)
 
 ```bash
-# 1. Mở rộng vocab BPE (giữ token cũ, thêm âm tiết + ký tự có dấu). --case phải khớp front-end của IndexTTS.
-python training/extend_tokenizer.py checkpoints/indextts/bpe.model data/splits/train.jsonl \
-    checkpoints/indextts_vi/bpe.model --num-syllables 4000 --case upper
-#    -> kiểm tra *.report.json: unk_tokens phải bằng 0; tokens_per_syllable phải giảm rõ.
+# 1. Môi trường (image có CUDA 12.x, Python 3.10–3.11)
+git clone git@github.com:BUTnghiemtuc/do-an-long-tieng-indextts.git vidub && cd vidub
+git clone https://github.com/index-tts/index-tts third_party/index-tts   # đã đối chiếu ở commit d9e41aa
+pip install -e third_party/index-tts        # hoặc: cd third_party/index-tts && uv sync
+pip install -e ".[train]"
+huggingface-cli download IndexTeam/IndexTTS-2.5 --local-dir checkpoints/IndexTTS-2.5
 
-# 2. Mở rộng embedding GPT theo vocab mới (hàng mới = trung bình hàng cũ).
-python training/resize_embeddings.py checkpoints/indextts/gpt.pth --list --old-vocab <N cũ>
-python training/resize_embeddings.py checkpoints/indextts/gpt.pth --out checkpoints/indextts_vi/gpt.pth \
-    --old-vocab <N cũ> --new-vocab <N mới> --extra <số token đặc biệt> --keys <tên tensor từ --list>
-#    -> sửa number_text_tokens trong config.yaml.
+# 2. Phép thử nhanh: model gốc nói tiếng Việt ra sao (mốc "trước finetune")
+python -m vidub.cli run clip.mp4 -c configs/gpu.yaml -c configs/indextts25_vi.yaml \
+    --set synthesize.indextts.model_dir=checkpoints/IndexTTS-2.5 \
+    --set synthesize.indextts.cfg_path=checkpoints/IndexTTS-2.5/config.yaml
 
-# 3. Sinh cặp prompt/target cùng người nói và trích trước semantic token, đặc trưng điều kiện
-#    (w2v-bert, CAMPPlus) bằng generate_gpt_pairs.py của mã cộng đồng.
+# 3. Trích đặc trưng (manifest từ data_prep/split.py)
+python -m training.indextts25.prepare_features data/splits/train.jsonl data/features/train \
+    --model-dir checkpoints/IndexTTS-2.5 --split-name train
+python -m training.indextts25.prepare_features data/splits/dev.jsonl data/features/dev \
+    --model-dir checkpoints/IndexTTS-2.5 --split-name dev
+
+# 4. Overfit (~1 giờ dữ liệu): loss phải giảm, câu đã train phải đọc đúng
+python -m training.indextts25.train -c training/indextts25/config_vi.yaml \
+    --set data.train_limit=600 --set train.max_steps=1500 --set train.warmup_steps=100 \
+    --set run.eval_every=500 --set run.output_dir=runs/overfit
+
+# 5. Run 1 (150 giờ, 1 epoch, so 2 mức LR) rồi Run 2 (toàn bộ, 3 epoch)
+python -m training.indextts25.train -c training/indextts25/config_vi.yaml \
+    --set train.epochs=1 --set train.learning_rate=5e-5 --set run.output_dir=runs/run1_lr5e-5
+python -m training.indextts25.train -c training/indextts25/config_vi.yaml --set run.output_dir=runs/run2
+# máy bị ngắt: thêm --resume runs/run2/step_XXXXXX.pt
+
+# 6. Xuất checkpoint và chấm CER/SS trên dev (chọn theo CER, không theo loss)
+python -m training.indextts25.export runs/run2/step_016000.pt \
+    --base-dir checkpoints/IndexTTS-2.5 --out checkpoints/IndexTTS-2.5-vi-16k
+python -m eval.eval_tts data/splits/dev_tts.jsonl --name vi_16k -c configs/indextts25_vi.yaml \
+    --set synthesize.indextts.model_dir=checkpoints/IndexTTS-2.5-vi-16k \
+    --set synthesize.indextts.cfg_path=checkpoints/IndexTTS-2.5-vi-16k/config.yaml
 ```
 
-## Tuần 3–4: Run 1, Run 2, gate
+Theo dõi bằng `tensorboard --logdir runs/`. Thiếu VRAM: `--set train.batch_size=4 --set train.gradient_accumulation=8`.
 
-- Cấu hình mẫu: [`train_vi.yaml`](train_vi.yaml). LR 1e-5–5e-5, warmup rồi cosine, bf16, replay zh/en 10–20%.
-- **Không tắt** cơ chế điều kiện thời lượng (cho embedding thời lượng bằng 0 với xác suất 30%), vì lồng tiếng cần điều khiển thời lượng.
-- Run 1 (đến ~17/10): 100–200 giờ để dò siêu tham số. Run 2 (đến ~28/10): toàn bộ dữ liệu.
-- Mỗi checkpoint chấm trên `dev_tts.jsonl` với seed và prompt cố định:
-  ```bash
-  python -m eval.eval_tts data/splits/dev_tts.jsonl --name run1_step20k -c configs/gpu.yaml \
-      --set synthesize.indextts.model_dir=checkpoints/run1/step20k
-  ```
-  rồi nghe tay 10 mẫu.
+## Các điểm khác IndexTTS2 cần nhớ
 
-### Gate 28/10
+- **Tokenizer**: 2.5 dùng tokenizer kiểu Whisper, đã có `<|vi|>`. Không mở rộng vocab.
+- **Embedding ngôn ngữ**: hàng `vi` (id 19) có sẵn, được khởi tạo từ `en` (id 0) và train với LR gấp 5.
+- **Thời lượng**: GPT của 2.5 không có embedding thời lượng (hai vị trí sau cond luôn bằng 0). `duration_factor` co giãn ở S2M, nên không cần xử lý gì khi train.
+- **Văn bản**: mọi chỗ đưa văn bản vào model đều phải qua `data_prep.vi_normalize.tts_frontend` (chuẩn hoá + viết thường) và đặt `text_normalization=False`. `prepare_features.py` và backend `indextts` (với `text_frontend: vi`) đã làm việc này.
+- Script giả định `emotion_dropout` = vector cảm xúc về 0, còn `speaker_noise_std` = nhiễu Gauss cộng vào vector giọng sau `spk_emb_proj`. Cấu hình của bản Đức chỉ ghi tên tham số, không ghi cách cài đặt.
 
-Đạt khi cả ba điều kiện đúng: CER ≤ 5%, SS không thấp hơn dinhthuan, nghe không có lỗi thanh điệu rõ.
+## Phương án dự phòng: IndexTTS2
 
-- **Đạt** → đổi `configs/gpu.yaml` sang checkpoint finetune.
-- **Không đạt** → pipeline giữ dinhthuan; phần finetune viết thành chương thực nghiệm và phân tích lỗi.
-
-| Dấu hiệu | Xử lý |
-| --- | --- |
-| SS giảm mạnh so với baseline (mất khả năng clone giọng) | Tăng số người nói, giảm LR, tăng replay zh/en, giảm số bước |
-| Một epoch dài hơn 2 ngày | Cắt còn 200 giờ, dùng LoRA, thuê GPU theo giờ |
-| CER dev không giảm sau Run 1 | Kiểm tra tokenizer (UNK, chữ hoa/thường), rồi xét gate sớm |
+`extend_tokenizer.py` và `resize_embeddings.py` dành cho IndexTTS2 (tokenizer SentencePiece). Chỉ dùng khi phải chuyển sang finetune IndexTTS2 bằng nhánh JarodMica `training_v2` (xem mục Rủi ro trong tài liệu kế hoạch).

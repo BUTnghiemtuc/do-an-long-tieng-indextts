@@ -67,6 +67,11 @@ def number_to_words(n: int) -> str:
     return _below_billion(n, full=False)
 
 
+def _month(n: int) -> str:
+    """Tên tháng: tháng 4 đọc là "tháng tư", không phải "tháng bốn"."""
+    return "tư" if n == 4 else number_to_words(n)
+
+
 def _read_digits(s: str) -> str:
     return " ".join(DIGITS[int(c)] for c in s)
 
@@ -88,9 +93,13 @@ def normalize(text: str) -> str:
     text = unicodedata.normalize("NFC", text)
     # ngày tháng năm
     text = re.sub(r"\b(\d{1,2})/(\d{1,2})/(\d{4})\b",
-                  lambda m: f"ngày {number_to_words(int(m[1]))} tháng {number_to_words(int(m[2]))} năm {number_to_words(int(m[3]))}", text)
+                  lambda m: f"ngày {number_to_words(int(m[1]))} tháng {_month(int(m[2]))} năm {number_to_words(int(m[3]))}", text)
     text = re.sub(r"\b(\d{1,2})/(\d{4})\b",
-                  lambda m: f"tháng {number_to_words(int(m[1]))} năm {number_to_words(int(m[2]))}", text)
+                  lambda m: f"tháng {_month(int(m[1]))} năm {number_to_words(int(m[2]))}", text)
+    # ngày/tháng không có năm: 2/9 -> ngày hai tháng chín (chỉ khi là ngày tháng hợp lệ)
+    text = re.sub(r"\b(\d{1,2})/(\d{1,2})\b(?!/)",
+                  lambda m: (f"ngày {number_to_words(int(m[1]))} tháng {_month(int(m[2]))}"
+                             if 1 <= int(m[1]) <= 31 and 1 <= int(m[2]) <= 12 else m[0]), text)
     text = re.sub(r"\b(ngày|tháng)\s+(?:ngày|tháng)\b", r"\1", text, flags=re.IGNORECASE)  # "ngày 25/11" -> không lặp
     # giờ
     text = re.sub(r"\b(\d{1,2})[h:](\d{2})\b",
@@ -108,6 +117,16 @@ def normalize(text: str) -> str:
     text = re.sub(r"[\"“”«»\[\](){}]", "", text)
     text = re.sub(r"\s*([,.!?;:…])", r"\1", text)
     return re.sub(r"\s+", " ", text).strip()
+
+
+def tts_frontend(text: str) -> str:
+    """Front-end văn bản cho IndexTTS tiếng Việt: chuẩn hoá + viết thường.
+
+    Bản finetune tiếng Đức viết thường toàn bộ và nhấn mạnh phải khớp giữa lúc train và
+    lúc suy luận. Mọi chỗ đưa văn bản vào IndexTTS (prepare_features, backend TTS của
+    pipeline) đều phải gọi đúng hàm này.
+    """
+    return normalize(text).lower()
 
 
 if __name__ == "__main__":

@@ -71,38 +71,53 @@ class IndexTTSBackend(TTSBackend):
 
     name = "indextts"
 
-    def __init__(self, entry: str, model_dir: str, cfg_path: str, use_fp16: bool = True,
+    def __init__(self, entry: str, model_dir: str, cfg_path: str, use_fp16: bool = True, use_bf16: bool = True,
                  lang: str | None = "vi", emo_alpha: float = 0.8, use_style_prompt: bool = True,
-                 **extra_init):
+                 text_frontend: str | None = None, generation: dict | None = None, **extra_init):
         mod_name, cls_name = entry.split(":")
         cls = getattr(importlib.import_module(mod_name), cls_name)
-        init_kw = {"cfg_path": cfg_path, "model_dir": model_dir, "use_fp16": use_fp16, **extra_init}
+        init_kw = {"cfg_path": cfg_path, "model_dir": model_dir, "use_fp16": use_fp16, "use_bf16": use_bf16,
+                   **extra_init}
         init_kw = _filter_kwargs(cls.__init__, init_kw)
         log.info("Nạp %s(%s)", entry, init_kw)
         self.model = cls(**init_kw)
-        self.infer_params = set(inspect.signature(self.model.infer).parameters)
+        params = inspect.signature(self.model.infer).parameters
+        self.infer_params = {n for n, p in params.items() if p.kind != p.VAR_KEYWORD}
+        # Tham số sinh (temperature, top_p...) chỉ truyền khi infer nhận **generation_kwargs.
+        self.generation = (generation or {}) if any(p.kind == p.VAR_KEYWORD for p in params.values()) else {}
         self.supports_duration = "duration_factor" in self.infer_params
         self.lang = lang
         self.emo_alpha = emo_alpha
         self.use_style_prompt = use_style_prompt
+        # "vi": dùng đúng front-end lúc finetune (chuẩn hoá + viết thường) và tắt bộ chuẩn hoá zh/en của IndexTTS.
+        self.text_frontend = text_frontend
         if not self.supports_duration:
             log.warning("infer() không có duration_factor: căn thời lượng sẽ chỉ dùng co giãn + mượn khoảng lặng")
+
+    def prepare_text(self, text: str) -> str:
+        if self.text_frontend == "vi":
+            from data_prep.vi_normalize import tts_frontend
+            return tts_frontend(text)
+        return text
 
     def synthesize(self, text, timbre_prompt, style_prompt, out_path, duration_factor=None):
         Path(out_path).parent.mkdir(parents=True, exist_ok=True)
         kw = {
             "spk_audio_prompt": str(timbre_prompt),
-            "text": text,
+            "text": self.prepare_text(text),
             "output_path": str(out_path),
             "lang": self.lang,
             "verbose": False,
         }
+        if self.text_frontend:
+            kw["text_normalization"] = False
         if self.use_style_prompt and style_prompt is not None:
             kw["emo_audio_prompt"] = str(style_prompt)
             kw["emo_alpha"] = self.emo_alpha
         if duration_factor is not None and self.supports_duration:
             kw["duration_factor"] = float(duration_factor)
-        self.model.infer(**{k: v for k, v in kw.items() if k in self.infer_params and v is not None})
+        call = {k: v for k, v in kw.items() if k in self.infer_params and v is not None}
+        self.model.infer(**call, **self.generation)
         return Path(out_path)
 
 

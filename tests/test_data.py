@@ -59,3 +59,9 @@ def test_eval_dubbing_duration_metrics(sample_clip, tmp_path):
     assert m["segments"] == 4
     assert 0 <= m["mean_abs_duration_error"] < 1
     assert 0 <= m["pct_within_10"] <= 100
+
+
+def test_normalize_day_month_without_year():
+    assert normalize("Ngày 2/9 có 3 người.") == "Ngày hai tháng chín có ba người."
+    assert normalize("Hẹn 30/4 nhé") == "Hẹn ngày ba mươi tháng tư nhé"
+    assert normalize("tỉ lệ 7/15") == "tỉ lệ bảy/mười lăm"   # không phải ngày tháng hợp lệ -> giữ dạng số
