@@ -1,4 +1,4 @@
-# Việc cần làm trên máy GPU (RTX 5090, RAM 16 GB)
+# Việc cần làm trên máy GPU (RTX 5090, 16 GB VRAM)
 
 Mục tiêu: chạy được bản finetune IndexTTS 2.5 tiếng Việt và qua **gate ngày 28/10**:
 
@@ -31,12 +31,12 @@ df -h ~                    # dung lượng trống
 | Thứ cần kiểm | Yêu cầu | Ghi chú |
 | --- | --- | --- |
 | Driver NVIDIA | ≥ 570, dòng "CUDA Version" ≥ 12.8 | RTX 5090 (kiến trúc Blackwell) chỉ chạy với PyTorch bản CUDA 12.8 trở lên |
-| VRAM | Xem dòng "Memory" của `nvidia-smi` | RTX 5090 bản desktop có 32 GB, bản laptop có 24 GB. Mục 7 chọn batch theo số này |
-| RAM | 16 GB | Đủ, nhưng **phải tạo thêm swap 16 GB** (ngay dưới) |
+| VRAM | 16 GB (xem dòng "Memory" của `nvidia-smi`) | Đủ để train: trọng số + gradient + AdamW chiếm ~5,3 GB, activation 2–4 GB ở batch 8 (xem mục 7). Lưu ý: RTX 5090 desktop có 32 GB, laptop có 24 GB; nếu `nvidia-smi` báo 16 GB thì có thể là RTX 5080/5070 Ti, các bước dưới vẫn áp dụng y nguyên |
+| RAM máy | ≥ 16 GB, tốt nhất 32 GB | Nếu RAM ≤ 16 GB thì **tạo thêm swap 16 GB** (ngay dưới) và đọc mục "Lưu ý khi RAM ít" ở cuối |
 | Ổ đĩa trống | ≥ 400 GB | Dữ liệu thô + WAV ~400 giờ (~70 GB) + đặc trưng + checkpoint (mỗi file ~1 GB) |
 | Hệ điều hành | Ubuntu 22.04 / 24.04 | Windows thì dùng WSL2 (Ubuntu) và cài driver NVIDIA bản cho WSL |
 
-Tạo swap. Swap giúp máy không bị treo khi nạp model 3 GB hoặc tải dataset lớn:
+Tạo swap nếu RAM máy ≤ 16 GB. Swap giúp máy không bị treo khi nạp model 3 GB hoặc tải dataset lớn:
 
 ```bash
 sudo fallocate -l 16G /swapfile && sudo chmod 600 /swapfile
@@ -44,7 +44,7 @@ sudo mkswap /swapfile && sudo swapon /swapfile
 echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 ```
 
-**Đạt khi:** `nvidia-smi` thấy GPU, driver ≥ 570, `free -h` thấy Swap 16G.
+**Đạt khi:** `nvidia-smi` thấy GPU 16 GB, driver ≥ 570; nếu RAM ≤ 16 GB thì `free -h` thấy Swap 16G.
 
 ## 2. Lấy mã và cài môi trường
 
@@ -121,7 +121,7 @@ Nghe hai file `base_vi.wav` và `base_en.wav`. Có thể chúng sai nhiều; đ�
 Chi tiết từng bộ (số giờ, license, lấy bao nhiêu) xem mục "Dữ liệu" trong tài liệu kế hoạch. Trước khi chạy, mở trang dataset trên HuggingFace để kiểm tra tên cột (`--speaker-col`, `--text-col`).
 
 ```bash
-# 5.1 Tải về WAV 24 kHz + manifest. --streaming để không nạp cả bộ vào RAM 16 GB
+# 5.1 Tải về WAV 24 kHz + manifest. --streaming để không nạp cả bộ dataset vào RAM
 python -m data_prep.import_hf nguyendv02/ViMD_Dataset --speaker-col speakerID --name vimd \
     --out data/raw/vimd --streaming
 python -m data_prep.import_hf capleaf/viVoice --speaker-col channel --name vivoice \
@@ -168,15 +168,21 @@ Script tự chạy tiếp nếu bị ngắt giữa chừng. Chạy lại cùng l
 
 Đây là phép thử quan trọng nhất: chứng minh script train chạy đúng với trọng số thật.
 
-Chọn batch theo VRAM ở mục 1:
+Với 16 GB VRAM, cấu hình gốc (`batch_size 8 × gradient_accumulation 4`, gradient checkpointing bật) dự kiến dùng ~9–10 GB. Đó là ước tính tính từ số tham số, chưa đo trên máy thật. Bước overfit này cũng để đo con số thật: cột `max_vram_gb` trong log là VRAM đỉnh đã dùng.
 
-| VRAM | Thêm vào mọi lệnh train |
+| `max_vram_gb` trong log | Làm gì |
 | --- | --- |
-| 32 GB (5090 desktop) | Giữ mặc định: `batch_size 8 × gradient_accumulation 4` |
-| 24 GB (5090 laptop) | `--set train.batch_size=4 --set train.gradient_accumulation=8` |
-| Báo lỗi CUDA out of memory | Giảm `batch_size` một nửa, tăng `gradient_accumulation` gấp đôi (batch hiệu dụng giữ 32) |
+| Dưới 14 | Giữ nguyên `batch_size 8 × gradient_accumulation 4` |
+| 14–15,5, hoặc thỉnh thoảng báo `CUDA out of memory` | Đổi sang `--set train.batch_size=4 --set train.gradient_accumulation=8` (batch hiệu dụng vẫn 32, chỉ chậm hơn một chút) |
+| Vẫn hết VRAM ở batch 4 | `--set train.batch_size=2 --set train.gradient_accumulation=16` |
 
-Với RAM 16 GB, luôn thêm `--set data.num_workers=0`: mỗi worker sao chép toàn bộ đặc trưng trong RAM.
+Luôn đặt biến môi trường sau trước khi train, để giảm phân mảnh bộ nhớ GPU:
+
+```bash
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+```
+
+Nếu RAM máy ≤ 16 GB thì thêm `--set data.num_workers=0`, vì mỗi worker sao chép toàn bộ đặc trưng trong RAM.
 
 ```bash
 python -m training.indextts25.train -c training/indextts25/config_vi.yaml --set data.num_workers=0 \
@@ -222,7 +228,7 @@ python -m training.indextts25.train -c training/indextts25/config_vi.yaml --set 
 # máy tắt/ngắt: chạy lại cùng lệnh, thêm --resume runs/run2/step_XXXXXX.pt
 ```
 
-Run 2 có khoảng 25.000 bước. Trên RTX 5090 ước tính 10–20 giờ. Con số chính xác lấy từ tốc độ đo được ở bước 7 (`elapsed_s` trong `runs/overfit/log.jsonl`).
+Run 2 có khoảng 25.000 bước. Trên card 16 GB ước tính 12–25 giờ (ước tính, chưa đo). Con số chính xác lấy từ tốc độ đo được ở bước 7 (`elapsed_s` trong `runs/overfit/log.jsonl`).
 
 ## 9. Chọn checkpoint và đánh giá
 
@@ -256,7 +262,13 @@ Không đạt gate thì chạy pipeline với `-c configs/gpu.yaml` (TTS là din
 
 ---
 
-## Lưu ý riêng cho máy RAM 16 GB
+## Lưu ý khi VRAM 16 GB
+
+- Không chạy hai tiến trình dùng GPU cùng lúc (ví dụ `prepare_features` khi đang train): `prepare_features` nạp đủ IndexTTS 2.5 (~7–8 GB), train dùng ~9–10 GB.
+- Pipeline lồng tiếng nạp lần lượt WhisperX (~5 GB), pyannote, rồi IndexTTS (~6 GB). Nếu báo hết VRAM, chạy từng bước một trong tiến trình riêng: `vidub run clip.mp4 -c ... --steps transcribe`, rồi `--steps translate synthesize align mix`.
+- Khi đánh giá, có thể chấm từng checkpoint một; không cần nạp nhiều model cùng lúc.
+
+## Lưu ý khi RAM ít (≤ 16 GB)
 
 - Không chạy `prepare_features` và `train` cùng lúc: mỗi tiến trình nạp model ~3–6 GB.
 - Luôn dùng `--set data.num_workers=0` khi train và `--streaming` khi tải dataset.

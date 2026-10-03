@@ -198,6 +198,9 @@ def main(argv: list[str] | None = None) -> dict:
             if step % run.get("log_every", 50) == 0 or step == 1:
                 rec = {"step": step, "epoch": epoch, "lr": scheduler.get_last_lr()[0], "grad_norm": float(grad_norm),
                        **{k: round(v, 4) for k, v in acc.items()}, "elapsed_s": round(time.time() - t0, 1)}
+                if device.type == "cuda":   # VRAM đỉnh từ lần log trước: dùng để chọn batch_size
+                    rec["max_vram_gb"] = round(torch.cuda.max_memory_allocated() / 1024 ** 3, 2)
+                    torch.cuda.reset_peak_memory_stats()
                 print(json.dumps(rec), flush=True)
                 history.append(rec)
                 with open(log_path, "a") as f:
