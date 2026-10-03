@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vidub"
+version = "0.1.0"
+description = "Lồng tiếng phim tự động sang tiếng Việt với IndexTTS"
+requires-python = ">=3.10,<3.12"
+dependencies = [
+    "numpy",
+    "scipy",
+    "soundfile",
+    "pyyaml",
+    "pydantic>=2",
+    "pyloudnorm",
+    "jiwer",
+]
+
+[project.optional-dependencies]
+# Chạy trên máy GPU NVIDIA. torch/torchaudio nên cài theo CUDA của máy trước.
+gpu = [
+    "demucs>=4.0",
+    "pyannote.audio>=3.1",
+    "whisperx",
+]
+llm = ["anthropic"]
+server = ["fastapi", "uvicorn[standard]", "python-multipart", "rq", "redis"]
+eval = ["transformers", "torchaudio"]
+dev = ["pytest", "httpx"]
+
+[project.scripts]
+vidub = "vidub.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["vidub*", "server*", "data_prep*", "eval*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

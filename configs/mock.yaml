@@ -1,0 +1,12 @@
+# Chạy toàn bộ pipeline không cần GPU / API key: dùng để phát triển website và test.
+# Cần file phụ đề gốc <clip>.srt nằm cạnh video.
+separate:
+  backend: none
+diarize:
+  backend: single
+transcribe:
+  backend: srt
+translate:
+  backend: copy
+synthesize:
+  backend: mock

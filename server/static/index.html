@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vidub — lồng tiếng tự động</title>
+<style>
+  :root { --bg:#f7f7f5; --card:#fff; --ink:#1d1d1b; --muted:#6b6b66; --line:#e2e2dc; --accent:#2f5bd3; --warn:#b4540a; --err:#b42318; --ok:#1f7a3d; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px/1.45 system-ui, sans-serif; background:var(--bg); color:var(--ink); }
+  header { padding:12px 20px; border-bottom:1px solid var(--line); background:var(--card); display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+  header h1 { font-size:17px; margin:0; }
+  header .note { color:var(--warn); font-size:13px; }
+  main { max-width:1300px; margin:0 auto; padding:16px 20px; }
+  section { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:14px 16px; margin-bottom:14px; }
+  h2 { font-size:15px; margin:0 0 10px; }
+  button { font:inherit; padding:5px 10px; border-radius:6px; border:1px solid var(--line); background:#fff; cursor:pointer; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  button:disabled { opacity:.5; cursor:default; }
+  input[type=text], textarea, select { font:inherit; padding:4px 6px; border:1px solid var(--line); border-radius:5px; width:100%; }
+  textarea { resize:vertical; min-height:2.6em; }
+  table { width:100%; border-collapse:collapse; }
+  th, td { text-align:left; vertical-align:top; padding:6px; border-bottom:1px solid var(--line); }
+  th { font-weight:600; color:var(--muted); font-size:12px; }
+  .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .muted { color:var(--muted); }
+  .warn { color:var(--warn); font-size:12px; }
+  .bar { height:6px; background:var(--line); border-radius:3px; overflow:hidden; width:260px; }
+  .bar > div { height:100%; background:var(--accent); transition:width .3s; }
+  .players { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .players video { width:100%; background:#000; border-radius:6px; }
+  .state-error { color:var(--err); } .state-done { color:var(--ok); }
+  .jobs a { color:var(--accent); cursor:pointer; margin-right:12px; }
+  .ratio-bad { color:var(--warn); font-weight:600; }
+  td.t { white-space:nowrap; font-variant-numeric:tabular-nums; }
+  @media (max-width: 800px) { .players { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>vidub · lồng tiếng phim sang tiếng Việt</h1>
+  <span class="note" id="disclaimer"></span>
+</header>
+<main>
+  <section>
+    <h2>Tải clip lên</h2>
+    <form id="upload" class="row">
+      <label>Video <input type="file" name="video" accept="video/*,audio/*" required></label>
+      <label>Phụ đề gốc (.srt, tuỳ chọn) <input type="file" name="subtitles" accept=".srt"></label>
+      <label>Ngôn ngữ gốc
+        <select name="src_lang" style="width:auto"><option value="en">Tiếng Anh</option><option value="zh">Tiếng Trung</option></select>
+      </label>
+      <button class="primary">Bắt đầu lồng tiếng</button>
+    </form>
+    <p class="jobs" id="jobs"></p>
+  </section>
+
+  <div id="job" hidden>
+    <section>
+      <div class="row">
+        <h2 style="margin:0" id="job-title"></h2>
+        <span id="state"></span>
+        <div class="bar"><div id="bar" style="width:0"></div></div>
+        <span class="muted" id="state-msg"></span>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button class="primary" id="btn-render">Áp dụng thay đổi</button>
+        <a id="dl-video" download>Tải MP4</a>
+        <a id="dl-srt" download>Tải SRT</a>
+        <span class="muted" id="rtf"></span>
+      </div>
+      <pre class="state-error" id="error" hidden></pre>
+    </section>
+
+    <section>
+      <h2>So sánh</h2>
+      <div class="players">
+        <div><div class="muted">Bản gốc</div><video id="v-src" controls preload="metadata"></video></div>
+        <div><div class="muted">Bản lồng tiếng</div><video id="v-dub" controls preload="metadata"></video></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Nhân vật</h2>
+      <table><thead><tr><th>ID</th><th>Tên</th><th>Ghi chú cho xưng hô (giới tính, tuổi, quan hệ)</th><th>Giọng mẫu</th><th></th></tr></thead>
+      <tbody id="speakers"></tbody></table>
+    </section>
+
+    <section>
+      <h2>Câu thoại</h2>
+      <table><thead><tr><th>#</th><th>Thời gian</th><th>Nhân vật</th><th>Câu gốc</th><th>Bản dịch</th><th>Thời lượng</th><th>Nghe</th><th></th></tr></thead>
+      <tbody id="segments"></tbody></table>
+    </section>
+  </div>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let jobId = null, job = null, events = null;
+
+async function api(path, opts = {}) {
+  const res = await fetch(path, opts);
+  if (!res.ok) { const t = await res.text(); alert(`Lỗi ${res.status}: ${t}`); throw new Error(t); }
+  return res.json();
+}
+const jsonOpts = (method, body) => ({ method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+const fileUrl = (rel) => rel ? `/api/jobs/${jobId}/files/${rel}?t=${Date.now()}` : "";
+const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
+const fmt = (t) => `${Math.floor(t / 60)}:${(t % 60).toFixed(1).padStart(4, "0")}`;
+const busy = () => job && ["queued", "running", "created"].includes(job.status.state);
+
+async function loadJobs() {
+  const list = await api("/api/jobs");
+  const box = $("jobs"); box.replaceChildren();
+  list.forEach(j => box.append(el("a", { textContent: `${j.filename || j.id} (${j.state})`, onclick: () => openJob(j.id) })));
+}
+
+$("upload").onsubmit = async (e) => {
+  e.preventDefault();
+  const btn = e.target.querySelector("button"); btn.disabled = true;
+  try { const { id } = await api("/api/jobs", { method: "POST", body: new FormData(e.target) }); openJob(id); loadJobs(); }
+  finally { btn.disabled = false; }
+};
+
+async function openJob(id) {
+  jobId = id; $("job").hidden = false;
+  await refresh();
+  $("v-src").src = `/api/jobs/${id}/source`;
+  watch();
+}
+
+async function refresh() {
+  job = await api(`/api/jobs/${jobId}`);
+  render();
+}
+
+function watch() {
+  if (events) events.close();
+  events = new EventSource(`/api/jobs/${jobId}/events`);
+  events.onmessage = async (m) => {
+    const st = JSON.parse(m.data);
+    showStatus(st);
+    if (!["queued", "running", "created"].includes(st.state)) { events.close(); await refresh(); loadJobs(); }
+  };
+}
+
+function showStatus(st) {
+  $("state").textContent = { queued: "đang chờ", running: "đang chạy", done: "xong", error: "lỗi", created: "mới tạo" }[st.state] || st.state;
+  $("state").className = `state-${st.state}`;
+  $("bar").style.width = `${st.state === "done" ? 100 : (st.frac || 0) * 100}%`;
+  $("state-msg").textContent = st.step ? `${st.step}: ${st.msg || ""}` : (st.msg || "");
+  $("error").hidden = st.state !== "error"; $("error").textContent = st.error || "";
+  $("btn-render").disabled = ["queued", "running", "created"].includes(st.state);
+}
+
+function render() {
+  const p = job.project;
+  $("job-title").textContent = p.clip_id;
+  showStatus(job.status);
+  $("rtf").textContent = job.rtf.rtf != null ? `RTF ${job.rtf.rtf}` : "";
+  for (const [id, key] of [["dl-video", "video"], ["dl-srt", "srt_vi"]]) {
+    $(id).hidden = !p.outputs[key]; $(id).href = fileUrl(p.outputs[key]);
+  }
+  if (p.outputs.video) $("v-dub").src = fileUrl(p.outputs.video);
+  else if (p.tracks.dub) $("v-dub").src = fileUrl(p.tracks.dub);
+
+  const spkBody = $("speakers"); spkBody.replaceChildren();
+  for (const [spk, s] of Object.entries(p.speakers)) {
+    const name = el("input", { type: "text", value: s.name });
+    const notes = el("input", { type: "text", value: s.notes, placeholder: "vd: nữ, 25 tuổi, người yêu của Tom" });
+    const save = el("button", { textContent: "Lưu", onclick: async () => {
+      job = await api(`/api/jobs/${jobId}/speakers/${spk}`, jsonOpts("PATCH", { name: name.value, notes: notes.value })); render();
+    }});
+    const timbre = s.timbre_prompt ? el("audio", { controls: true, src: fileUrl(s.timbre_prompt), style: "height:30px" }) : el("span", { className: "muted", textContent: "chưa có" });
+    spkBody.append(el("tr", {}, el("td", { textContent: spk }), el("td", {}, name), el("td", {}, notes), el("td", {}, timbre), el("td", {}, save)));
+  }
+
+  const segBody = $("segments"); segBody.replaceChildren();
+  for (const s of p.segments) {
+    const spkSel = el("select", {}, ...Object.entries(p.speakers).map(([k, v]) => el("option", { value: k, textContent: v.name, selected: k === s.speaker })));
+    const vi = el("textarea", { value: s.vi_text, rows: 2 });
+    const ratio = s.duration_ratio;
+    const ratioCell = el("td", { className: "t" },
+      el("span", { textContent: ratio ? `${(ratio * 100).toFixed(0)}%` : "–", className: ratio && Math.abs(ratio - 1) > 0.1 ? "ratio-bad" : "" }),
+      ...s.warnings.map(w => el("div", { className: "warn", textContent: w })));
+    const listen = el("td", {},
+      s.style_prompt ? el("audio", { controls: true, src: fileUrl(s.style_prompt), style: "height:28px;width:150px", title: "gốc" }) : "",
+      s.tts_audio ? el("audio", { controls: true, src: fileUrl(s.tts_audio), style: "height:28px;width:150px", title: "lồng tiếng" }) : "");
+    const saveRegen = el("button", { textContent: "Tạo lại câu này", disabled: busy(), onclick: async () => {
+      await api(`/api/jobs/${jobId}/segments/${s.id}`, jsonOpts("PATCH", { vi_text: vi.value, speaker: spkSel.value }));
+      await api(`/api/jobs/${jobId}/segments/${s.id}/regenerate`, { method: "POST" });
+      await refresh(); watch();
+    }});
+    const asTimbre = el("button", { textContent: "Dùng làm giọng mẫu", disabled: busy() || !s.style_prompt, onclick: async () => {
+      job = await api(`/api/jobs/${jobId}/speakers/${s.speaker}`, jsonOpts("PATCH", { timbre_from_segment: s.id })); render();
+    }});
+    segBody.append(el("tr", {},
+      el("td", { textContent: s.id }),
+      el("td", { className: "t", textContent: `${fmt(s.start)}–${fmt(s.end)}` }),
+      el("td", {}, spkSel),
+      el("td", { textContent: s.src_text, style: "max-width:260px" }),
+      el("td", { style: "min-width:260px" }, vi, s.vi_locked ? el("div", { className: "muted", textContent: "đã sửa tay" }) : ""),
+      ratioCell, listen, el("td", {}, saveRegen, el("br"), asTimbre)));
+  }
+}
+
+$("btn-render").onclick = async () => {
+  // Lưu mọi ô đã sửa trước khi chạy lại.
+  const rows = [...$("segments").children];
+  for (const [i, s] of job.project.segments.entries()) {
+    const vi = rows[i].querySelector("textarea").value, spk = rows[i].querySelector("select").value;
+    if (vi !== s.vi_text || spk !== s.speaker)
+      await api(`/api/jobs/${jobId}/segments/${s.id}`, jsonOpts("PATCH", { vi_text: vi, speaker: spk }));
+  }
+  await api(`/api/jobs/${jobId}/render`, { method: "POST" });
+  await refresh(); watch();
+};
+
+api("/api/meta").then(m => $("disclaimer").textContent = m.disclaimer);
+loadJobs();
+</script>
+</body>
+</html>

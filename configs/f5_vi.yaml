@@ -1,0 +1,9 @@
+# Baseline F5-TTS-Vietnamese qua backend `command`. Chỉnh lệnh cho khớp repo F5-TTS đã cài.
+# {ref_text} lấy từ file <prompt>.wav.txt nếu có.
+synthesize:
+  backend: command
+  command:
+    command: >-
+      f5-tts_infer-cli --model F5TTS_Base --ckpt_file checkpoints/f5_vi/model.pt
+      --vocab_file checkpoints/f5_vi/vocab.txt --ref_audio {ref_audio} --ref_text {ref_text}
+      --gen_text {text} --output_dir {out_dir} --output_file {out_name}

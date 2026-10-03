@@ -1,0 +1,10 @@
+# Cấu hình chạy thật trên máy GPU. Dùng: vidub run clip.mp4 -c configs/gpu.yaml
+# Tuần 1–4 (trước gate 28/10): TTS tạm là checkpoint dinhthuan.
+# Sau gate: đổi model_dir/cfg_path sang checkpoint finetune (hoặc IndexTTS 2.5 + entry tương ứng).
+synthesize:
+  backend: indextts
+  indextts:
+    entry: indextts.infer_v2:IndexTTS2
+    model_dir: checkpoints/dinhthuan
+    cfg_path: checkpoints/dinhthuan/config.yaml
+    use_fp16: true

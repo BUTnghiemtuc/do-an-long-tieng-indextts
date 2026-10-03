@@ -1,0 +1,71 @@
+# Cấu hình mặc định của pipeline lồng tiếng.
+# Ghi đè bằng file khác: vidub run clip.mp4 -c configs/gpu.yaml
+# hoặc từng khoá: vidub run clip.mp4 --set synthesize.backend=mock
+
+src_lang: en
+tgt_lang: vi
+
+extract:
+  sample_rate: 44100
+
+separate:
+  backend: demucs          # demucs | none (giữ nguyên audio, nền = im lặng)
+  model: htdemucs
+  device: cuda
+
+diarize:
+  backend: pyannote        # pyannote | single (1 người nói, dùng để test)
+  model: pyannote/speaker-diarization-3.1
+  hf_token_env: HF_TOKEN
+  min_speakers: null
+  max_speakers: null
+  merge_gap: 0.5           # gộp 2 lượt cùng người nói cách nhau dưới 0.5 s
+
+transcribe:
+  backend: whisperx        # whisperx | srt (đọc file <clip>.srt nằm cạnh video)
+  model: large-v3
+  device: cuda
+  compute_type: float16
+  batch_size: 16
+  max_sentence_dur: 12.0   # cắt câu dài hơn ngưỡng này tại khoảng lặng lớn nhất
+  pause_split: 0.6         # khoảng lặng giữa 2 từ để tách câu
+
+translate:
+  backend: anthropic       # anthropic | copy (giữ câu gốc, để test)
+  model: claude-opus-5-5
+  effort: medium
+  vi_syllables_per_sec: 5.0  # ước lượng lại từ dữ liệu train: python -m data_prep.stats
+  length_tolerance: 0.15     # câu dịch vượt quá ngân sách âm tiết 15% thì yêu cầu rút gọn
+  max_shorten_rounds: 2
+  scene_gap: 2.0             # khoảng lặng > 2 s thì sang cảnh mới
+  max_lines_per_scene: 25
+
+synthesize:
+  backend: indextts        # indextts | mock
+  timbre_min_dur: 3.0
+  timbre_max_dur: 10.0
+  indextts:
+    # Lớp suy luận: "module:Class". IndexTTS2 gốc / dinhthuan: indextts.infer_v2:IndexTTS2
+    entry: indextts.infer_v2:IndexTTS2
+    model_dir: checkpoints/indextts
+    cfg_path: checkpoints/indextts/config.yaml
+    use_fp16: true
+    lang: vi               # chỉ truyền nếu hàm infer có tham số này (IndexTTS 2.5)
+    emo_alpha: 0.8
+    use_style_prompt: true # style prompt = câu thoại gốc; false = dùng timbre prompt cho cả hai (ablation)
+
+align:
+  duration_factor_min: 0.75
+  duration_factor_max: 1.25
+  ratio_tolerance: 0.05    # lệch dưới 5% thì không cần chỉnh
+  max_stretch: 0.10        # co giãn thời gian tối đa ±10%
+  max_borrow: 0.6          # mượn tối đa 0.6 s khoảng lặng sau câu
+  min_gap: 0.08            # luôn chừa khoảng cách tối thiểu với câu kế tiếp
+  warn_ratio: 0.10         # cờ cảnh báo khi lệch thời lượng quá 10%
+
+mix:
+  dialog_lufs: -20.0
+  background_gain_db: 0.0
+  duck_db: 0.0             # hạ nền khi có thoại (0 = tắt)
+  audio_codec: aac
+  audio_bitrate: 192k

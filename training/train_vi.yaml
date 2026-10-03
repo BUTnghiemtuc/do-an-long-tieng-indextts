@@ -1,0 +1,47 @@
+# Cấu hình finetune GPT (Text-to-Semantic) cho tiếng Việt — mẫu theo mục 5 của kế hoạch.
+# Tên khoá cần đối chiếu với training_config.yaml của mã train cộng đồng
+# (nhánh JarodMica training_v2 / bản tiếng Đức) khi port sang IndexTTS 2.5.
+
+seed: 1234
+base_checkpoint: checkpoints/indextts_vi/gpt.pth   # đã resize embedding
+tokenizer: checkpoints/indextts_vi/bpe.model       # đã mở rộng vocab
+language_token: VI                                 # thêm 1 hàng điều kiện ngôn ngữ (token-level concat)
+
+data:
+  train: data/splits/train.jsonl
+  dev: data/splits/dev.jsonl
+  replay: data/replay_zh_en.jsonl    # một phần dữ liệu zh/en gốc chống quên
+  replay_ratio: 0.15                  # 10–20% mỗi batch
+  pair_same_speaker: true             # prompt/target cùng người nói
+  max_duration: 25.0
+
+freeze:                               # chỉ train GPT + embedding mới (giống Stage 3 IndexTTS2)
+  - semantic_codec
+  - s2m
+  - bigvgan
+  - conditioners                      # w2v-bert, CAMPPlus, perceiver/emotion conditioner
+
+optim:
+  lr: 2.0e-5                          # dò trong 1e-5 .. 5e-5 ở Run 1
+  warmup_steps: 1000
+  schedule: cosine
+  weight_decay: 0.01
+  grad_clip: 1.0
+  precision: bf16
+  batch_size: 8
+  grad_accum: 4                       # chỉnh theo VRAM
+
+duration_conditioning:
+  zero_prob: 0.3                      # giữ như IndexTTS2: KHÔNG tắt, lồng tiếng cần điều khiển thời lượng
+
+runs:
+  run1: {subset_hours: 150, max_steps: 20000}   # đến ~17/10, dò siêu tham số
+  run2: {subset_hours: null, max_steps: 60000}  # đến ~28/10, toàn bộ dữ liệu
+
+eval:
+  every_steps: 2000
+  dev_tts: data/splits/dev_tts.jsonl  # 100 câu, seed + prompt cố định
+  metrics: [cer, ss, utmos]
+  listen_samples: 10
+
+logging: tensorboard                  # hoặc wandb

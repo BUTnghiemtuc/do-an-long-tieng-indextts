@@ -1,0 +1,35 @@
+# docker compose up --build  ->  http://localhost:8000
+# Cần NVIDIA Container Toolkit. Đặt ANTHROPIC_API_KEY, HF_TOKEN trong file .env.
+x-common: &common
+  build: .
+  image: vidub:latest
+  env_file: .env
+  environment:
+    REDIS_URL: redis://redis:6379/0
+    VIDUB_DATA: /app/data/jobs
+    VIDUB_CONFIG: /app/configs/gpu.yaml
+    HF_HOME: /app/.cache/huggingface
+  volumes:
+    - ./data:/app/data
+    - ./checkpoints:/app/checkpoints
+    - ./.cache:/app/.cache
+  depends_on: [redis]
+
+services:
+  redis:
+    image: redis:7-alpine
+
+  api:
+    <<: *common
+    ports: ["8000:8000"]
+
+  worker:
+    <<: *common
+    command: ["rq", "worker", "vidub", "--url", "redis://redis:6379/0"]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
