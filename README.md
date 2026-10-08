@@ -13,7 +13,7 @@ Mỗi clip có một thư mục dự án chứa `project.json`. Cả 8 bước �
 | 2 | `separate` giọng ↔ nhạc nền | Demucs htdemucs | `none` |
 | 3 | `diarize` ai nói khi nào | pyannote 3.1 | `single` (VAD năng lượng) |
 | 4 | `transcribe` lời thoại + cắt câu | WhisperX large-v3 | `srt` (phụ đề gốc cạnh video) |
-| 5 | `translate` dịch theo cảnh, ràng buộc số âm tiết | Claude (`claude-opus-5-5`) | `copy` |
+| 5 | `translate` dịch theo cảnh, ràng buộc số âm tiết | Gemini 2.5 Flash qua OpenRouter (`google/gemini-2.5-flash`); có thể đổi sang Claude (`anthropic`) | `copy` |
 | 6 | `synthesize` sinh giọng (timbre = nhân vật, style = câu gốc) | IndexTTS2 / 2.5 / bản finetune | `mock` |
 | 7 | `align` căn thời lượng | duration_factor → co giãn ±10% → mượn khoảng lặng | — |
 | 8 | `mix` loudness, trộn M&E, ghép video, SRT | pyloudnorm, ffmpeg | — |
@@ -31,13 +31,13 @@ Hướng dẫn từng bước khi chuyển sang máy GPU: [docs/huong-dan-may-gp
 ```bash
 conda create -n vidub python=3.11 && conda activate vidub
 pip install -e ".[server,dev]"           # đủ để chạy thử toàn bộ với backend giả lập
-pytest                                    # 36 test, chạy trên CPU (test finetune cần third_party/index-tts)
+pytest                                    # 53 test, chạy trên CPU (test finetune cần third_party/index-tts)
 
 # Máy GPU NVIDIA:
 pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124
 pip install -e ".[gpu,llm,server,eval]"
 git clone https://github.com/index-tts/index-tts && pip install -e index-tts
-export ANTHROPIC_API_KEY=...  HF_TOKEN=...   # HF: chấp nhận điều khoản pyannote/speaker-diarization-3.1
+cp .env.example .env   # điền OPENROUTER_API_KEY (dịch), HF_TOKEN; HF: chấp nhận điều khoản pyannote/speaker-diarization-3.1
 ```
 
 ## Dùng
@@ -60,9 +60,41 @@ vidub run clip.mp4 -c configs/gpu.yaml --set align.max_stretch=0.15 --set transl
 ### Website
 
 ```bash
+cd web && npm install && npm run build && cd ..                   # build giao diện -> web/dist
 VIDUB_CONFIG=configs/mock.yaml uvicorn server.app:app --reload   # http://localhost:8000
-docker compose up --build                                         # bản GPU: api + worker + redis
+docker compose up --build                                         # bản GPU: api + worker + redis (Dockerfile tự build web/)
+
+# Sửa giao diện: chạy song song uvicorn (cổng 8000) và Vite dev server (hot reload, chuyển /api sang 8000)
+cd web && npm run dev                                             # http://localhost:5173
 ```
+
+**Lần chạy đầu:**
+
+1. Mở website. Trang sẽ chuyển tới `/#/setup` để tạo tài khoản quản trị viên.
+2. Nhập mã khởi tạo. Mã được in ra log của uvicorn, hoặc đặt trước bằng `VIDUB_SETUP_TOKEN`.
+3. Có thể tạo admin bằng dòng lệnh thay cho bước trên:
+
+```bash
+python -m server.manage create-admin admin@vidu.vn --name "Quản trị"   # mật khẩu hỏi qua getpass
+python -m server.manage reset-password ai_do@vidu.vn                   # quên mật khẩu admin
+python -m server.manage list-users
+```
+
+Người dùng, phiên đăng nhập, quyền sở hữu job, nhật ký và cài đặt nằm trong SQLite (`VIDUB_DB`, mặc định `data/vidub.db`). Dữ liệu từng clip vẫn ở `project.json`.
+
+**Tài khoản và bảo mật** (chi tiết trong [bao-cao-do-an/05-trien-khai.md](bao-cao-do-an/05-trien-khai.md) mục 5.4):
+
+- Đăng nhập, đăng ký (admin bật/tắt được). Mật khẩu băm bằng scrypt.
+- Phiên lưu trong cookie HttpOnly. Chống CSRF bằng double-submit.
+- Khoá 15 phút sau 5 lần nhập sai. Có header CSP/HSTS.
+- Mỗi người chỉ thấy job của mình. Có giới hạn dung lượng upload và số job chạy cùng lúc.
+- Trang quản trị gồm:
+  - tổng quan: GPU, ổ đĩa, biểu đồ job;
+  - người dùng: cấp quyền, khoá, mật khẩu tạm, buộc đăng xuất;
+  - toàn bộ job;
+  - nhật ký hoạt động;
+  - cài đặt.
+- Chạy sau HTTPS thì đặt `VIDUB_SECURE_COOKIE=1`. Chạy sau reverse proxy thì đặt `VIDUB_TRUST_PROXY=1` (xem `.env.example`).
 
 Website cho phép:
 
@@ -74,7 +106,18 @@ Website cho phép:
 
 Không có `REDIS_URL` thì job chạy trong luồng nền của API. Như vậy là đủ cho buổi demo trên một máy.
 
-Giao diện hiện là một trang HTML/JS thuần ([server/static/index.html](server/static/index.html)) dùng chung API. Có thể thay bằng React + wavesurfer.js sau mà không phải sửa backend.
+Giao diện nằm ở [web/](web/): React 19 + Vite + TypeScript, Tailwind CSS v4, Motion (animation), wavesurfer.js (timeline sóng âm), font Be Vietnam Pro. Có giao diện sáng và tối, đổi bằng View Transitions API. Các phần chính:
+
+- trang chủ: kéo thả clip + SRT, danh sách dự án (di chuột vào thẻ để xem trước clip);
+- thanh tiến độ 8 bước cập nhật trực tiếp qua SSE;
+- bộ phát A/B: hai video chạy đồng bộ, bấm `A` để chuyển chéo tiếng gốc ↔ lồng tiếng, hoặc xem hai khung cạnh nhau. Phụ đề trên video hiện cả bản dịch đang gõ dở;
+- timeline hai làn (gốc / tiếng Việt), mỗi câu là một vùng tô theo màu nhân vật, bấm vào để tua;
+- thẻ câu thoại: thước số âm tiết so với ngân sách, tỉ lệ thời lượng so với vùng ±10%, cảnh báo, khoá sửa tay, nghe A/B từng câu, "Tạo lại câu này" (`Ctrl+Enter`);
+- bảng nhân vật: tên, ghi chú xưng hô, nghe giọng mẫu.
+
+Phím tắt: `Space` phát/dừng, `A` đổi tiếng, `←`/`→` câu trước/sau.
+
+Chưa build `web/` thì server hiện trang hướng dẫn build ([server/static/index.html](server/static/index.html)).
 
 ## Theo giai đoạn của kế hoạch
 

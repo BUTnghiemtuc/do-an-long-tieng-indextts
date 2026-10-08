@@ -1,0 +1,159 @@
+@import "tailwindcss";
+
+/* Theme đặt bằng <html data-theme="light|dark">, xem src/lib/theme.ts */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ------------------------------------------------------------------ màu
+   Sáng: "giấy kịch bản" ấm. Tối: phòng chiếu, ánh đèn máy chiếu màu hổ phách. */
+@theme static {
+  --font-sans: "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+
+  --color-bg: #f5f1ea;
+  --color-surface: #fffdf9;
+  --color-surface-2: #f0eadf;
+  --color-line: #e3dbcd;
+  --color-line-strong: #cfc4b2;
+  --color-ink: #1a1720;
+  --color-muted: #6c6674;
+  --color-accent: #e9a23b;
+  --color-accent-strong: #9a5800;
+  --color-accent-ink: #1d1304;
+  --color-rec: #d92d45;
+  --color-ok: #10805b;
+  --color-warn: #c2410c;
+  --color-glow: #f3b65a;
+
+  --color-spk-0: #0d9488;
+  --color-spk-1: #7c3aed;
+  --color-spk-2: #db2777;
+  --color-spk-3: #0284c7;
+  --color-spk-4: #4d7c0f;
+  --color-spk-5: #c2410c;
+
+  --animate-rec: rec 1.6s ease-in-out infinite;
+  --animate-marquee: marquee 40s linear infinite;
+  --animate-grain: grain 1.2s steps(6) infinite;
+  --animate-spin-slow: spin 6s linear infinite;
+}
+
+[data-theme="dark"] {
+  --color-bg: #09090d;
+  --color-surface: #111118;
+  --color-surface-2: #191921;
+  --color-line: #24242e;
+  --color-line-strong: #34343f;
+  --color-ink: #f3efe7;
+  --color-muted: #9b98a5;
+  --color-accent: #f5b84b;
+  --color-accent-strong: #ffc768;
+  --color-accent-ink: #1d1304;
+  --color-rec: #ff4d61;
+  --color-ok: #3ddc97;
+  --color-warn: #ff8552;
+  --color-glow: #f5b84b;
+
+  --color-spk-0: #2dd4bf;
+  --color-spk-1: #a78bfa;
+  --color-spk-2: #f472b6;
+  --color-spk-3: #38bdf8;
+  --color-spk-4: #a3e635;
+  --color-spk-5: #fb923c;
+}
+
+@layer base {
+  html { color-scheme: light; }
+  html[data-theme="dark"] { color-scheme: dark; }
+  body {
+    @apply bg-bg text-ink font-sans antialiased;
+    font-feature-settings: "ss01", "cv11";
+    min-height: 100dvh;
+  }
+  ::selection { background: color-mix(in oklab, var(--color-accent) 40%, transparent); }
+  :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: 6px; }
+  * { scrollbar-width: thin; scrollbar-color: var(--color-line-strong) transparent; }
+}
+
+/* ------------------------------------------------------------------ keyframes */
+@keyframes rec { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(.8); } }
+@keyframes marquee { to { transform: translateX(-50%); } }
+@keyframes marquee-y { to { transform: translateY(-50%); } }
+@keyframes shake { 10%, 90% { transform: translateX(-1px); } 20%, 80% { transform: translateX(3px); } 30%, 50%, 70% { transform: translateX(-6px); } 40%, 60% { transform: translateX(6px); } }
+@keyframes grain {
+  0% { transform: translate(0, 0); } 20% { transform: translate(-3%, 2%); } 40% { transform: translate(2%, -3%); }
+  60% { transform: translate(-2%, -1%); } 80% { transform: translate(3%, 3%); } 100% { transform: translate(0, 0); }
+}
+@keyframes bar { 0%, 100% { transform: scaleY(.25); } 50% { transform: scaleY(1); } }
+@keyframes aurora {
+  0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+  50% { transform: translate(6%, -4%) scale(1.15) rotate(12deg); }
+  100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+}
+@keyframes ants { to { --ants-angle: 360deg; } }
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+@property --ants-angle { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+
+/* ------------------------------------------------------------------ hiệu ứng dùng chung */
+
+/* Hạt phim phủ toàn trang, rất nhẹ */
+.film-grain {
+  pointer-events: none; position: fixed; inset: -50%; z-index: 60; opacity: .05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: var(--animate-grain);
+}
+[data-theme="dark"] .film-grain { opacity: .07; }
+
+/* Dải lỗ phim chạy ngang */
+.film-perf {
+  height: 14px;
+  background-image: radial-gradient(circle at 50% 50%, var(--color-bg) 0 3px, transparent 3.5px),
+    linear-gradient(var(--color-line-strong), var(--color-line-strong));
+  background-size: 22px 14px, 100% 100%;
+}
+
+/* Sóng âm "đang thu" */
+.eq-bar { transform-origin: 50% 100%; animation: bar 1.1s ease-in-out infinite; }
+
+/* Viền "kiến bò" khi kéo file vào */
+.ants-border {
+  --ants-angle: 0deg;
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    conic-gradient(from var(--ants-angle), var(--color-accent), var(--color-rec), var(--color-spk-1), var(--color-accent)) border-box;
+  border: 2px solid transparent;
+  animation: ants 3s linear infinite;
+}
+
+/* Khung skeleton */
+.shimmer {
+  background: linear-gradient(90deg, var(--color-surface-2) 25%, color-mix(in oklab, var(--color-surface-2), var(--color-ink) 6%) 50%, var(--color-surface-2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+/* Thẻ: viền phát sáng theo con trỏ (biến --mx, --my đặt bằng JS) */
+.spotlight { position: relative; isolation: isolate; }
+.spotlight::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; z-index: -1; opacity: 0; transition: opacity .3s;
+  background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%), color-mix(in oklab, var(--color-glow) 16%, transparent), transparent 60%);
+}
+.spotlight:hover::before { opacity: 1; }
+
+.text-gradient {
+  background: linear-gradient(100deg, var(--color-accent-strong), var(--color-rec) 55%, var(--color-spk-1));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* ------------------------------------------------------------------ View Transitions: đổi theme */
+html.theme-vt::view-transition-old(root), html.theme-vt::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+html.theme-vt::view-transition-new(root) { z-index: 2; }
+::view-transition-old(root) { animation-duration: .22s; }
+::view-transition-new(root) { animation-duration: .28s; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+  .film-grain { display: none; }
+}

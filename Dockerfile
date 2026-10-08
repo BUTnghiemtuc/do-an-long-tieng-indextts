@@ -1,3 +1,13 @@
+# Build giao diện React (web/ -> web/dist)
+FROM node:20-slim AS web
+WORKDIR /web
+COPY web/package.json web/package-lock.json ./
+RUN npm ci
+COPY web/index.html web/vite.config.ts web/tsconfig.json ./
+COPY web/public ./public
+COPY web/src ./src
+RUN npm run build
+
 # Ảnh chạy được cả API lẫn worker GPU.
 FROM nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04
 
@@ -22,6 +32,7 @@ COPY server ./server
 COPY data_prep ./data_prep
 COPY eval ./eval
 COPY configs ./configs
+COPY --from=web /web/dist ./web/dist
 RUN pip install -e ".[gpu,llm,server]"
 
 EXPOSE 8000

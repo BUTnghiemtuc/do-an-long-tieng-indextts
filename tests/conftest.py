@@ -36,3 +36,62 @@ def sample_clip(tmp_path: Path) -> Path:
     )
     write_srt(video.with_suffix(".srt"), [Cue(a, b, txt) for a, b, txt in LINES])
     return video
+
+
+# ---------------------------------------------------------------- web: client có đăng nhập
+MOCK_CONFIG = Path(__file__).resolve().parent.parent / "configs" / "mock.yaml"
+ADMIN = ("admin@vidub.test", "Quantri2026")
+USER = ("user@vidub.test", "Bientap2026")
+
+
+@pytest.fixture
+def web(tmp_path, monkeypatch):
+    """App FastAPI với CSDL, thư mục job riêng cho mỗi test; trả về hàm tạo client."""
+    pytest.importorskip("fastapi")
+    from fastapi.testclient import TestClient
+
+    from server import app as app_mod
+    from server import jobs
+    from server.security import login_failures, register_limiter
+
+    data = (tmp_path / "jobs").resolve()
+    data.mkdir()
+    monkeypatch.setattr(jobs, "DATA_DIR", data)
+    monkeypatch.setenv("VIDUB_DB", str(tmp_path / "vidub.db"))
+    monkeypatch.setenv("VIDUB_SETUP_TOKEN", "setup-token-test")
+    monkeypatch.setenv("VIDUB_CONFIG", str(MOCK_CONFIG))
+    monkeypatch.delenv("REDIS_URL", raising=False)
+    login_failures.clear()
+    register_limiter.clear()
+
+    def new_client() -> "TestClient":
+        c = TestClient(app_mod.app)
+        c.get("/api/auth/status")  # nhận cookie CSRF
+        c.headers["X-CSRF-Token"] = c.cookies.get("vidub_csrf")
+        return c
+
+    return new_client
+
+
+def login(client, email: str, password: str):
+    return client.post("/api/auth/login", json={"email": email, "password": password})
+
+
+@pytest.fixture
+def admin_client(web):
+    from server.auth import create_user
+
+    create_user(ADMIN[0], "Admin", ADMIN[1], role="admin")
+    c = web()
+    assert login(c, *ADMIN).status_code == 200
+    return c
+
+
+@pytest.fixture
+def user_client(web, admin_client):
+    from server.auth import create_user
+
+    create_user(USER[0], "User", USER[1])
+    c = web()
+    assert login(c, *USER).status_code == 200
+    return c

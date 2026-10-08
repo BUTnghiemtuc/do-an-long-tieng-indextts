@@ -29,6 +29,24 @@ def job_dir(job_id: str) -> Path:
     return path
 
 
+def list_job_dirs() -> list[Path]:
+    """Thư mục job có project.json, mới nhất trước."""
+    if not DATA_DIR.exists():
+        return []
+    return [d for d in sorted(DATA_DIR.iterdir(), reverse=True) if (d / "project" / "project.json").exists()]
+
+
+def dir_size(path: Path) -> int:
+    total = 0
+    for root, _, files in os.walk(path):
+        for f in files:
+            try:
+                total += os.lstat(os.path.join(root, f)).st_size
+            except OSError:
+                pass
+    return total
+
+
 def new_job_id() -> str:
     return time.strftime("%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:6]
 
