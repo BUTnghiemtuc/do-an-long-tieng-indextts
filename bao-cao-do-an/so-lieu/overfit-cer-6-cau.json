@@ -1,0 +1,56 @@
+[
+ {
+  "i": 0,
+  "id": "vimd_00008974",
+  "ref": "Tham gia về chương trình thi này em lại hiểu biết nhiều hơn về bộ đội, luôn hỗ trợ dân hết mình, luôn cố gắng giúp dân về các vấn đề từ việc nhỏ tới việc lớn.",
+  "base_hyp": "Tham bê trongăn đê mê bên ghê ê mê t bê ghê ê mến càê tê bê cà bên là ghê bế ghế.",
+  "overfit_hyp": "Tham gia về chương trình thi này, em lại hiểu biết nhiều hơn về bộ đội luôn hỗ trợ dẫn hết mình, luôn cố gắng giúp dẫn về các vấn đề từ việc nhỏ thôi việc lớn.",
+  "cer_base": 0.7483870967741936,
+  "cer_overfit": 0.025806451612903226
+ },
+ {
+  "i": 1,
+  "id": "vimd_00014791",
+  "ref": "Gia đình con như thế này thì về học đối với con là cái gì đó rất là cần thiết. Nó là cái con đường duy nhất để con có thể thay đổi cái hoàn cảnh của gia đình.",
+  "base_hyp": "Rên cònệ khá, cònệ ghen g.",
+  "overfit_hyp": "Gia đình con như thế này thì về học đối với con là à cái gì đó rất là cần thiết. nó là cái à con đường duy nhất để con có thể thay đổi cái hoàn cảnh của gia đình.",
+  "cer_base": 0.8974358974358975,
+  "cer_overfit": 0.02564102564102564
+ },
+ {
+  "i": 2,
+  "id": "vimd_00005042",
+  "ref": "Và đồng hành với việc đó thì Ủy ban Phường cũng đã triển khai các cái dự án xây dựng các cái hệ thống xử lý nước thải đảm bảo về hạ tầng kỹ thuật",
+  "base_hyp": "Ban Han Vơ đã ban để kêê n ghê để n ê lí en nê ghê a bê, ghê a bê ghê không.",
+  "overfit_hyp": "Và đồng hành với việc đó thìăn vương cũng đã triển khai cả cây dự án xây dựng các cây cây t thống xử lý nước thai đảm bảo vệ hạ tầng kỹ thuật.",
+  "cer_base": 0.7241379310344828,
+  "cer_overfit": 0.15172413793103448
+ },
+ {
+  "i": 3,
+  "id": "vimd_00000212",
+  "ref": "Các địa phương nêu cao tinh thần chủ động trong việc xây dựng kế hoạch, thành lập ban tổ chức và xây dựng kịch bản tổ chức lễ hội rất là chi tiết.",
+  "base_hyp": "Gê phơ nì chầu thân a kê trên t toàn hú, sinh n năng hộ kểiện hối  á kê của chị rêu.",
+  "overfit_hyp": "Các địa phương nêu cầu tinh thần chủ động trong việc xây dựng kế hoạch thành lậpan tổ chức và xây dựng bàn tổ chức lễ hội rất là chi tiết.",
+  "cer_base": 0.7013888888888888,
+  "cer_overfit": 0.06944444444444445
+ },
+ {
+  "i": 4,
+  "id": "vimd_00000212",
+  "ref": "Các địa phương nêu cao tinh thần chủ động trong việc xây dựng kế hoạch, thành lập ban tổ chức và xây dựng kịch bản tổ chức lễ hội rất là chi tiết.",
+  "base_hyp": "Kíờần Caoẳng ấy hô ờ ờ en pế màn kì, bên kia bán cái bên đón ở lì ớ.",
+  "overfit_hyp": "Các địa phương nâng cao tinh thần chủ động trong việc xây dựng kế hoạch thành lậpan tổ chức và xây dựng kịch bản tổ chức Lễ hội rất là chi tiết.",
+  "cer_base": 0.7638888888888888,
+  "cer_overfit": 0.034722222222222224
+ },
+ {
+  "i": 5,
+  "id": "vimd_00013194",
+  "ref": "Đơn vị tiếp tục tham mưu cho giám đốc công an tỉnh, chỉ đạo công an các đơn vị địa phương tăng cường công tác phòng cháy chữa cháy và thực hiện tốt các giải pháp phòng cháy chữa cháy.",
+  "base_hyp": "N thìồngăn ngành con an con ngành di trút cùng ngành con cặng con anh kiết giày và tăng gỗ giày và phon cả giày vá.",
+  "overfit_hyp": "Đơn vị tiếp tục tham mưu cho giám đốc Công an tỉnh chỉ đạo công an các đơn vị địa phương tăng cường công tác phòng chữa cháy và thực hiện tốt các giải pháp phòng cháữa cháy.",
+  "cer_base": 0.6740331491712708,
+  "cer_overfit": 0.049723756906077346
+ }
+]

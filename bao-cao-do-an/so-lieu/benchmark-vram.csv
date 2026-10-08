@@ -1,0 +1,7 @@
+du_lieu,batch_size,grad_accum,grad_checkpointing,vram_dinh_gb,giay_moi_buoc
+1000 cặp dài nhất,8,4,bật,7.59,3.23
+1000 cặp dài nhất,16,2,bật,9.04,3.21
+1000 cặp dài nhất,4,8,tắt,OOM,
+1000 cặp dài nhất,2,16,tắt,11.58,2.21
+20000 cặp thường,8,4,bật,6.98,0.75
+20000 cặp thường,2,16,tắt,11.27,0.82

@@ -1,0 +1,87 @@
+id,text,asr,cer,wer,ss,ss_wavlm,utmos,es,emo_ref,emo_out,emo_match,dur,gen_time,rtf,wav
+esd_0012_neutral_0,Cậu có biết hôm nay là ngày gì không?,Kho Copinelona phòng.,0.7222,1.0,0.5064,0.8899,4.041,0.6338,neutral,angry,0.0,2.229,,,results/tts/emo_base/wavs/esd_0012_neutral_0.wav
+esd_0012_neutral_1,Mọi người đều đã về nhà hết rồi.,Mákơ dàea khờ.,0.871,1.0,0.4539,0.7729,3.614,0.8221,neutral,neutral,1.0,1.997,,,results/tts/emo_base/wavs/esd_0012_neutral_1.wav
+esd_0012_sadness_0,Cậu có biết hôm nay là ngày gì không?,Kho khm nelonon.,0.7778,1.0,0.6101,0.7572,3.854,0.9971,sad,sad,1.0,2.392,,,results/tts/emo_base/wavs/esd_0012_sadness_0.wav
+esd_0012_sadness_1,Mọi người đều đã về nhà hết rồi.,Ma cơ đơ Đê naơ.,0.7419,1.0,0.5602,0.7744,3.78,0.8834,sad,sad,1.0,2.229,,,results/tts/emo_base/wavs/esd_0012_sadness_1.wav
+esd_0012_surprise_0,Cậu có biết hôm nay là ngày gì không?,Khéo khiết innea n này phóng.,0.6111,1.0,0.6055,0.9147,2.045,0.8513,surprised,surprised,1.0,2.833,,,results/tts/emo_base/wavs/esd_0012_surprise_0.wav
+esd_0012_surprise_1,Mọi người đều đã về nhà hết rồi.,Mak đã về nó.,0.7097,0.75,0.6232,0.9294,2.339,0.8441,surprised,surprised,1.0,2.032,,,results/tts/emo_base/wavs/esd_0012_surprise_1.wav
+esd_0013_anger_0,Đây là lần đầu tiên tôi nhìn thấy nó.,Golanenin này.,0.8056,1.0,0.5527,0.8909,3.102,0.9834,angry,angry,1.0,2.508,,,results/tts/emo_base/wavs/esd_0013_anger_0.wav
+esd_0013_anger_1,Bố mẹ sẽ đến thăm chúng ta vào cuối tuần này.,Bon mét xây trênen hình.,0.8182,1.0,0.6652,0.8804,3.065,0.9832,angry,angry,1.0,3.309,,,results/tts/emo_base/wavs/esd_0013_anger_1.wav
+esd_0013_happiness_0,Đây là lần đầu tiên tôi nhìn thấy nó.,Thế lèn r rồi ch trên hô.,0.6944,1.0,0.6158,0.9346,3.391,0.9189,happy,happy,1.0,1.997,,,results/tts/emo_base/wavs/esd_0013_happiness_0.wav
+esd_0013_happiness_1,Bố mẹ sẽ đến thăm chúng ta vào cuối tuần này.,Bo mi trênen thì khó cụ ở nơi.,0.6591,1.0,0.7635,0.9464,2.992,0.9265,happy,happy,1.0,3.913,,,results/tts/emo_base/wavs/esd_0013_happiness_1.wav
+esd_0013_neutral_0,Đây là lần đầu tiên tôi nhìn thấy nó.,Voenutene.,0.8889,1.0,0.6938,0.9481,3.154,0.9415,neutral,neutral,1.0,2.833,,,results/tts/emo_base/wavs/esd_0013_neutral_0.wav
+esd_0013_neutral_1,Bố mẹ sẽ đến thăm chúng ta vào cuối tuần này.,Bên xe đến Theno thơ này.,0.6136,0.8182,0.6293,0.8961,3.771,0.9731,neutral,neutral,1.0,2.67,,,results/tts/emo_base/wavs/esd_0013_neutral_1.wav
+esd_0013_sadness_0,Đây là lần đầu tiên tôi nhìn thấy nó.,Gelaninu.,0.8889,1.0,0.6221,0.9032,3.378,0.7664,sad,sad,1.0,2.786,,,results/tts/emo_base/wavs/esd_0013_sadness_0.wav
+esd_0013_sadness_1,Bố mẹ sẽ đến thăm chúng ta vào cuối tuần này.,Bon xây đen then côần.,0.7273,1.0,0.7637,0.9728,3.367,0.7386,sad,sad,1.0,3.111,,,results/tts/emo_base/wavs/esd_0013_sadness_1.wav
+esd_0013_surprise_0,Đây là lần đầu tiên tôi nhìn thấy nó.,V Lan đầuin nảy nụ.,0.6111,1.0,0.7454,0.948,2.94,0.7146,surprised,surprised,1.0,2.508,,,results/tts/emo_base/wavs/esd_0013_surprise_0.wav
+esd_0013_surprise_1,Bố mẹ sẽ đến thăm chúng ta vào cuối tuần này.,Bố mít sừn then then.,0.7045,0.9091,0.7674,0.9511,2.914,0.7962,surprised,surprised,1.0,2.392,,,results/tts/emo_base/wavs/esd_0013_surprise_1.wav
+esd_0014_anger_0,Tôi không muốn nói về chuyện đó nữa.,Cho không noen đó.,0.6571,0.75,0.5273,0.8508,3.577,0.995,angry,angry,1.0,2.113,,,results/tts/emo_base/wavs/esd_0014_anger_0.wav
+esd_0014_anger_1,Cô ấy đã gọi điện cho tôi lúc nửa đêm.,Khe trả Đinô tơ lưn.,0.7297,1.0,0.5462,0.8397,2.876,0.9967,angry,angry,1.0,2.786,,,results/tts/emo_base/wavs/esd_0014_anger_1.wav
+esd_0014_happiness_0,Tôi không muốn nói về chuyện đó nữa.,"Không, hôn nào vé rổ.",0.6571,0.875,0.7105,0.9273,3.855,0.7082,happy,angry,0.0,2.67,,,results/tts/emo_base/wavs/esd_0014_happiness_0.wav
+esd_0014_happiness_1,Cô ấy đã gọi điện cho tôi lúc nửa đêm.,Quay gà đi trul ê.,0.7027,1.0,0.6738,0.9123,3.715,0.8543,happy,happy,1.0,3.228,,,results/tts/emo_base/wavs/esd_0014_happiness_1.wav
+esd_0014_neutral_0,Tôi không muốn nói về chuyện đó nữa.,Kh hônoe.,0.8571,1.0,0.6268,0.9189,3.359,0.9468,neutral,neutral,1.0,2.473,,,results/tts/emo_base/wavs/esd_0014_neutral_0.wav
+esd_0014_neutral_1,Cô ấy đã gọi điện cho tôi lúc nửa đêm.,Cô đâyor đ đềnotoun.,0.7297,0.9,0.6131,0.8762,3.727,0.9772,neutral,neutral,1.0,2.833,,,results/tts/emo_base/wavs/esd_0014_neutral_1.wav
+esd_0014_sadness_0,Tôi không muốn nói về chuyện đó nữa.,Không hay nổến trở.,0.7143,0.875,0.7166,0.8574,3.226,0.8478,sad,sad,1.0,2.635,,,results/tts/emo_base/wavs/esd_0014_sadness_0.wav
+esd_0014_sadness_1,Cô ấy đã gọi điện cho tôi lúc nửa đêm.,Khi Cadin Chotole.,0.7568,1.0,0.713,0.8475,3.486,0.9578,sad,sad,1.0,2.949,,,results/tts/emo_base/wavs/esd_0014_sadness_1.wav
+esd_0014_surprise_0,Tôi không muốn nói về chuyện đó nữa.,Khốn n nào bén rủa.,0.6857,1.0,0.7082,0.8955,3.468,0.5235,surprised,surprised,1.0,2.473,,,results/tts/emo_base/wavs/esd_0014_surprise_0.wav
+esd_0014_surprise_1,Cô ấy đã gọi điện cho tôi lúc nửa đêm.,Kế gã cô tên Châuờ lưn này.,0.6757,1.0,0.6134,0.8052,3.403,0.3069,surprised,angry,0.0,2.786,,,results/tts/emo_base/wavs/esd_0014_surprise_1.wav
+esd_0015_anger_0,Anh không ngờ mọi chuyện lại thành ra như thế này.,Anh Hônenlơ tên Ro này.,0.6327,0.8182,0.7163,0.9014,4.385,0.911,angry,angry,1.0,2.635,,,results/tts/emo_base/wavs/esd_0015_anger_0.wav
+esd_0015_anger_1,Chúng ta phải rời khỏi đây trước khi trời tối.,T thờ.,0.8889,1.0,0.6559,0.8863,3.687,0.9808,angry,angry,1.0,2.426,,,results/tts/emo_base/wavs/esd_0015_anger_1.wav
+esd_0015_happiness_0,Anh không ngờ mọi chuyện lại thành ra như thế này.,HoW Hanbert Ron.,0.8367,1.0,0.6307,0.832,3.977,0.8127,happy,happy,1.0,2.508,,,results/tts/emo_base/wavs/esd_0015_happiness_0.wav
+esd_0015_happiness_1,Chúng ta phải rời khỏi đây trước khi trời tối.,Chúng th ta Ruk thuker.,0.6667,0.9,0.5427,0.7719,4.024,0.9733,happy,happy,1.0,1.997,,,results/tts/emo_base/wavs/esd_0015_happiness_1.wav
+esd_0015_neutral_0,Anh không ngờ mọi chuyện lại thành ra như thế này.,Ho Ho càng Rona.,0.8163,1.0,0.7,0.8365,4.237,0.9852,neutral,neutral,1.0,2.426,,,results/tts/emo_base/wavs/esd_0015_neutral_0.wav
+esd_0015_neutral_1,Chúng ta phải rời khỏi đây trước khi trời tối.,Trươnga Rkeer.,0.8667,1.0,0.602,0.7846,4.421,0.9444,neutral,neutral,1.0,2.345,,,results/tts/emo_base/wavs/esd_0015_neutral_1.wav
+esd_0015_sadness_0,Anh không ngờ mọi chuyện lại thành ra như thế này.,Hồng  em hổ  cờle xanh ron.,0.7143,1.0,0.7516,0.936,4.115,0.9929,sad,sad,1.0,3.193,,,results/tts/emo_base/wavs/esd_0015_sadness_0.wav
+esd_0015_sadness_1,Chúng ta phải rời khỏi đây trước khi trời tối.,S Tarerkuru.,0.8444,1.0,0.4686,0.7056,4.013,0.9037,sad,sad,1.0,2.868,,,results/tts/emo_base/wavs/esd_0015_sadness_1.wav
+esd_0015_surprise_0,Anh không ngờ mọi chuyện lại thành ra như thế này.,"Anh khóốn, emớ, anh ngớ nó khơi né.",0.6531,0.9091,0.6614,0.7536,3.493,0.4746,surprised,happy,0.0,2.995,,,results/tts/emo_base/wavs/esd_0015_surprise_0.wav
+esd_0015_surprise_1,Chúng ta phải rời khỏi đây trước khi trời tối.,Chúng theo rớơ cớ thì.,0.6889,0.9,0.6867,0.9013,4.174,0.9532,surprised,surprised,1.0,2.067,,,results/tts/emo_base/wavs/esd_0015_surprise_1.wav
+esd_0016_anger_0,Em đã đợi anh ở đây suốt cả buổi chiều.,Ám đo ờ chây suơ bự.,0.6579,1.0,0.6865,0.9105,3.985,0.9393,angry,angry,1.0,2.508,,,results/tts/emo_base/wavs/esd_0016_anger_0.wav
+esd_0016_anger_1,Tôi vừa nhận được tin từ bệnh viện.,Thô vờ nây trênơn bệ.,0.7059,1.0,0.5503,0.9544,3.165,0.9975,angry,angry,1.0,2.067,,,results/tts/emo_base/wavs/esd_0016_anger_1.wav
+esd_0016_happiness_0,Em đã đợi anh ở đây suốt cả buổi chiều.,Em đó ai  ấy suắp bừ.,0.6579,0.9,0.5855,0.8126,4.353,0.6136,happy,happy,1.0,2.392,,,results/tts/emo_base/wavs/esd_0016_happiness_0.wav
+esd_0016_happiness_1,Tôi vừa nhận được tin từ bệnh viện.,Tho và nender Ten.,0.7353,1.0,0.6386,0.9047,4.247,0.9975,happy,happy,1.0,2.067,,,results/tts/emo_base/wavs/esd_0016_happiness_1.wav
+esd_0016_neutral_0,Em đã đợi anh ở đây suốt cả buổi chiều.,Em đó ai ờ đ đây suơ Bun.,0.5263,0.8,0.654,0.8384,3.834,0.9952,neutral,neutral,1.0,2.473,,,results/tts/emo_base/wavs/esd_0016_neutral_0.wav
+esd_0016_neutral_1,Tôi vừa nhận được tin từ bệnh viện.,Thover nendereninen.,0.7647,1.0,0.6265,0.9574,4.342,0.9502,neutral,neutral,1.0,2.554,,,results/tts/emo_base/wavs/esd_0016_neutral_1.wav
+esd_0016_sadness_0,Em đã đợi anh ở đây suốt cả buổi chiều.,Em đài I sua bu.,0.6842,0.9,0.7091,0.9032,3.976,0.984,sad,sad,1.0,3.03,,,results/tts/emo_base/wavs/esd_0016_sadness_0.wav
+esd_0016_sadness_1,Tôi vừa nhận được tin từ bệnh viện.,Thovero trực trênen.,0.7647,1.0,0.7979,0.9447,3.333,0.9901,sad,sad,1.0,2.589,,,results/tts/emo_base/wavs/esd_0016_sadness_1.wav
+esd_0016_surprise_0,Em đã đợi anh ở đây suốt cả buổi chiều.,Emo Suk bốn.,0.8158,1.0,0.7017,0.9276,3.451,0.2545,surprised,angry,0.0,2.067,,,results/tts/emo_base/wavs/esd_0016_surprise_0.wav
+esd_0016_surprise_1,Tôi vừa nhận được tin từ bệnh viện.,Thovder P.,0.9118,1.0,0.4251,0.9053,3.059,0.9727,surprised,surprised,1.0,2.31,,,results/tts/emo_base/wavs/esd_0016_surprise_1.wav
+esd_0017_anger_0,Cậu có biết hôm nay là ngày gì không?,Khẩuo biển nelo nàyfon.,0.6944,1.0,0.5235,0.9021,4.351,0.9553,angry,angry,1.0,3.425,,,results/tts/emo_base/wavs/esd_0017_anger_0.wav
+esd_0017_anger_1,Mọi người đều đã về nhà hết rồi.,Mó Gua tờ be nọ.,0.7742,1.0,0.72,0.8677,4.34,0.9989,angry,angry,1.0,2.392,,,results/tts/emo_base/wavs/esd_0017_anger_1.wav
+esd_0017_happiness_0,Cậu có biết hôm nay là ngày gì không?,Khao khá penelaé?,0.8889,1.0,0.5394,0.956,3.956,0.9905,happy,happy,1.0,2.554,,,results/tts/emo_base/wavs/esd_0017_happiness_0.wav
+esd_0017_happiness_1,Mọi người đều đã về nhà hết rồi.,Maưa đá với n nó kh.,0.7097,1.0,0.4472,0.6088,3.012,0.668,happy,neutral,0.0,1.95,,,results/tts/emo_base/wavs/esd_0017_happiness_1.wav
+esd_0017_neutral_0,Cậu có biết hôm nay là ngày gì không?,Co khe hàn này lò nàyon.,0.6111,1.0,0.6608,0.9654,4.11,0.9942,neutral,neutral,1.0,2.752,,,results/tts/emo_base/wavs/esd_0017_neutral_0.wav
+esd_0017_neutral_1,Mọi người đều đã về nhà hết rồi.,Mã khea kh.,0.8387,1.0,0.6345,0.7669,3.419,0.9832,neutral,neutral,1.0,2.148,,,results/tts/emo_base/wavs/esd_0017_neutral_1.wav
+esd_0017_sadness_0,Cậu có biết hôm nay là ngày gì không?,Khok nelo no không.,0.6667,0.8889,0.555,0.9294,3.621,0.9925,sad,sad,1.0,2.833,,,results/tts/emo_base/wavs/esd_0017_sadness_0.wav
+esd_0017_sadness_1,Mọi người đều đã về nhà hết rồi.,Moknobena.,0.9032,1.0,0.4496,0.7878,3.965,0.9045,sad,sad,1.0,2.067,,,results/tts/emo_base/wavs/esd_0017_sadness_1.wav
+esd_0017_surprise_0,Cậu có biết hôm nay là ngày gì không?,Khố khổ n nếu là nỉ hố.,0.6944,0.8889,0.5882,0.8847,3.208,0.9351,surprised,surprised,1.0,2.833,,,results/tts/emo_base/wavs/esd_0017_surprise_0.wav
+esd_0017_surprise_1,Mọi người đều đã về nhà hết rồi.,Mo gớ đã vé nó.,0.6774,0.875,0.391,0.9047,4.209,0.8253,surprised,surprised,1.0,2.032,,,results/tts/emo_base/wavs/esd_0017_surprise_1.wav
+esd_0018_anger_0,Đây là lần đầu tiên tôi nhìn thấy nó.,Đ lá lên trôn thin họ.,0.5833,1.0,0.5052,0.794,4.041,0.9935,angry,angry,1.0,2.345,,,results/tts/emo_base/wavs/esd_0018_anger_0.wav
+esd_0018_anger_1,Bố mẹ sẽ đến thăm chúng ta vào cuối tuần này.,Bẩm sệ trên Thon Thonongôn .,0.7045,1.0,0.6296,0.928,3.917,0.9803,angry,angry,1.0,3.03,,,results/tts/emo_base/wavs/esd_0018_anger_1.wav
+esd_0018_happiness_0,Đây là lần đầu tiên tôi nhìn thấy nó.,La lệnh tr chỗ chị ăn đỏ.,0.6944,1.0,0.6218,0.8454,3.217,0.9551,happy,happy,1.0,2.113,,,results/tts/emo_base/wavs/esd_0018_happiness_0.wav
+esd_0018_happiness_1,Bố mẹ sẽ đến thăm chúng ta vào cuối tuần này.,Bạn sĩ đến Tton.,0.7273,0.9091,0.5926,0.8822,4.326,0.7888,happy,happy,1.0,2.113,,,results/tts/emo_base/wavs/esd_0018_happiness_1.wav
+esd_0018_neutral_0,Đây là lần đầu tiên tôi nhìn thấy nó.,La len tên Tonno.,0.6667,1.0,0.5204,0.8873,3.699,0.9709,neutral,neutral,1.0,1.95,,,results/tts/emo_base/wavs/esd_0018_neutral_0.wav
+esd_0018_neutral_1,Bố mẹ sẽ đến thăm chúng ta vào cuối tuần này.,Bà mẹJen Tana ở khô thẳng.,0.6818,1.0,0.6409,0.879,4.285,0.8762,neutral,neutral,1.0,3.111,,,results/tts/emo_base/wavs/esd_0018_neutral_1.wav
+esd_0018_sadness_0,Đây là lần đầu tiên tôi nhìn thấy nó.,La lên trôn trên hô.,0.6667,1.0,0.5307,0.7987,4.091,0.9907,sad,sad,1.0,2.786,,,results/tts/emo_base/wavs/esd_0018_sadness_0.wav
+esd_0018_sadness_1,Bố mẹ sẽ đến thăm chúng ta vào cuối tuần này.,Bo mét sen Theno ooena.,0.7273,1.0,0.722,0.886,3.864,0.6854,sad,sad,1.0,3.785,,,results/tts/emo_base/wavs/esd_0018_sadness_1.wav
+esd_0018_surprise_0,Đây là lần đầu tiên tôi nhìn thấy nó.,Trẻ loa lan chòn chân nó.,0.6667,0.8889,0.4777,0.853,2.719,0.8902,surprised,happy,0.0,1.95,,,results/tts/emo_base/wavs/esd_0018_surprise_0.wav
+esd_0018_surprise_1,Bố mẹ sẽ đến thăm chúng ta vào cuối tuần này.,Baenon con thế.,0.8409,1.0,0.6234,0.8459,3.387,0.8416,surprised,surprised,1.0,2.392,,,results/tts/emo_base/wavs/esd_0018_surprise_1.wav
+esd_0019_anger_0,Tôi không muốn nói về chuyện đó nữa.,Tho Hon nonation.,0.7714,1.0,0.6061,0.8756,3.516,0.9617,angry,angry,1.0,2.067,,,results/tts/emo_base/wavs/esd_0019_anger_0.wav
+esd_0019_anger_1,Cô ấy đã gọi điện cho tôi lúc nửa đêm.,Ke goêen trô chôn ê.,0.7568,1.0,0.532,0.9529,3.369,0.9264,angry,angry,1.0,2.67,,,results/tts/emo_base/wavs/esd_0019_anger_1.wav
+esd_0019_happiness_0,Tôi không muốn nói về chuyện đó nữa.,Thâu hổ nỏ ven giỏ.,0.7429,1.0,0.5411,0.9507,4.044,0.7359,happy,angry,0.0,2.589,,,results/tts/emo_base/wavs/esd_0019_happiness_0.wav
+esd_0019_happiness_1,Cô ấy đã gọi điện cho tôi lúc nửa đêm.,Khi t tế cả tên Chô Lua.,0.7027,1.0,0.5216,0.8973,4.076,0.9924,happy,happy,1.0,2.276,,,results/tts/emo_base/wavs/esd_0019_happiness_1.wav
+esd_0019_neutral_0,Tôi không muốn nói về chuyện đó nữa.,Khô hùng nào bể biển trổ.,0.7143,1.0,0.4666,0.8302,3.661,0.7166,neutral,sad,0.0,2.508,,,results/tts/emo_base/wavs/esd_0019_neutral_0.wav
+esd_0019_neutral_1,Cô ấy đã gọi điện cho tôi lúc nửa đêm.,K tế G gọi tênoto ngày.,0.6757,0.9,0.6864,0.9557,3.828,0.8782,neutral,neutral,1.0,2.508,,,results/tts/emo_base/wavs/esd_0019_neutral_1.wav
+esd_0019_sadness_0,Tôi không muốn nói về chuyện đó nữa.,Thâu hồn Nahena.,0.7429,1.0,0.582,0.9377,3.999,0.8929,sad,sad,1.0,2.426,,,results/tts/emo_base/wavs/esd_0019_sadness_0.wav
+esd_0019_sadness_1,Cô ấy đã gọi điện cho tôi lúc nửa đêm.,Keda Carsento là.,0.8649,1.0,0.6797,0.9129,3.477,0.9588,sad,sad,1.0,3.471,,,results/tts/emo_base/wavs/esd_0019_sadness_1.wav
+esd_0019_surprise_0,Tôi không muốn nói về chuyện đó nữa.,Khon nào v về số.,0.7429,0.875,0.4054,0.8521,4.328,0.8177,surprised,surprised,1.0,2.148,,,results/tts/emo_base/wavs/esd_0019_surprise_0.wav
+esd_0019_surprise_1,Cô ấy đã gọi điện cho tôi lúc nửa đêm.,Khấy xe gót trên ton thấu lý ạ?,0.6757,1.0,0.4919,0.8968,4.368,0.7968,surprised,surprised,1.0,2.833,,,results/tts/emo_base/wavs/esd_0019_surprise_1.wav
+esd_0020_anger_0,Anh không ngờ mọi chuyện lại thành ra như thế này.,Em Ho ghenlanực trệ.,0.7755,1.0,0.6829,0.8661,3.971,0.6521,angry,angry,1.0,2.113,,,results/tts/emo_base/wavs/esd_0020_anger_0.wav
+esd_0020_anger_1,Chúng ta phải rời khỏi đây trước khi trời tối.,Trong thabrcok.,0.8222,1.0,0.4775,0.783,4.083,0.5532,angry,angry,1.0,2.194,,,results/tts/emo_base/wavs/esd_0020_anger_1.wav
+esd_0020_happiness_0,Anh không ngờ mọi chuyện lại thành ra như thế này.,Hát hồng Morenla thánh ra này.,0.5918,0.8182,0.437,0.8181,3.065,0.8221,happy,angry,0.0,2.868,,,results/tts/emo_base/wavs/esd_0020_happiness_0.wav
+esd_0020_happiness_1,Chúng ta phải rời khỏi đây trước khi trời tối.,Thong thảacaro.,0.8,1.0,0.5515,0.8176,3.092,0.9397,happy,angry,0.0,2.635,,,results/tts/emo_base/wavs/esd_0020_happiness_1.wav
+esd_0020_neutral_0,Anh không ngờ mọi chuyện lại thành ra như thế này.,Ho go Hom naộng.,0.8163,1.0,0.6138,0.8383,3.74,0.8979,neutral,neutral,1.0,2.229,,,results/tts/emo_base/wavs/esd_0020_neutral_0.wav
+esd_0020_neutral_1,Chúng ta phải rời khỏi đây trước khi trời tối.,Chúng thả rửa cửa thuủa.,0.6667,0.9,0.6776,0.7799,3.901,0.9641,neutral,neutral,1.0,2.276,,,results/tts/emo_base/wavs/esd_0020_neutral_1.wav
+esd_0020_sadness_0,Anh không ngờ mọi chuyện lại thành ra như thế này.,Anh hang hình liệt xình.,0.6735,0.9091,0.659,0.9384,3.505,0.9785,sad,sad,1.0,2.868,,,results/tts/emo_base/wavs/esd_0020_sadness_0.wav
+esd_0020_sadness_1,Chúng ta phải rời khỏi đây trước khi trời tối.,Trong thảo ruk th.,0.7333,1.0,0.6422,0.881,3.11,0.9864,sad,sad,1.0,2.914,,,results/tts/emo_base/wavs/esd_0020_sadness_1.wav
+esd_0020_surprise_0,Anh không ngờ mọi chuyện lại thành ra như thế này.,Hômo Hen lé rồi sẽen.,0.7551,1.0,0.6184,0.9186,3.413,0.8201,surprised,happy,0.0,2.752,,,results/tts/emo_base/wavs/esd_0020_surprise_0.wav
+esd_0020_surprise_1,Chúng ta phải rời khỏi đây trước khi trời tối.,Chúng ta rớer khẽớ.,0.6889,0.8,0.5895,0.8585,3.745,0.7332,surprised,surprised,1.0,2.194,,,results/tts/emo_base/wavs/esd_0020_surprise_1.wav
