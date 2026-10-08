@@ -41,7 +41,7 @@ class ParakeetASR:
         self.model = nemo_asr.models.ASRModel.from_pretrained(model).eval()
 
     def __call__(self, paths: list[str]) -> list[str]:
-        out = self.model.transcribe(paths, batch_size=len(paths), verbose=False)
+        out = self.model.transcribe(paths, batch_size=min(len(paths), 16), verbose=False)  # cả 100 câu một lượt -> hết VRAM
         if isinstance(out, tuple):
             out = out[0]
         return [o if isinstance(o, str) else o.text for o in out]

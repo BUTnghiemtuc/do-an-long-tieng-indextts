@@ -215,3 +215,36 @@ def test_overfit_resume_and_export(tmp_path):
         logits = inference_mel_logits(fresh, *args)
     acc = (logits[:-1].argmax(-1) == f["codes"].long()).float().mean()
     assert acc > 0.9
+
+
+def test_make_pairs_speaker_similarity_filter():
+    from training.indextts25.data import make_pairs
+
+    a, b = torch.randn(192), torch.randn(192)
+    spk = {"x1": a, "x2": a + 0.01 * torch.randn(192), "y1": b}     # cùng nhãn "k" nhưng y1 là người khác
+    manifest = [{"id": i, "speaker": "k", "duration": 5.0} for i in spk]
+    pairs = make_pairs(manifest, pairs_per_utt=2, spk=spk, min_sim=0.5)
+    assert {(p["target"], p["prompt"]) for p in pairs} == {("x1", "x2"), ("x2", "x1")}
+    # dev lấy câu mẫu từ kho riêng
+    dev = [{"id": "x1", "speaker": "k", "duration": 5.0}]
+    pool = [{"id": "x2", "speaker": "k", "duration": 5.0}, {"id": "y1", "speaker": "k", "duration": 5.0}]
+    assert make_pairs(dev, prompts=pool, spk=spk, min_sim=0.5) == [{"target": "x1", "prompt": "x2"}]
+
+
+def test_override_scientific_notation():
+    from vidub.config import parse_override
+
+    assert parse_override("train.learning_rate=5e-5") == {"train": {"learning_rate": 5e-5}}
+    assert parse_override("synthesize.backend=mock") == {"synthesize": {"backend": "mock"}}
+
+
+def test_emotion_from_target_prob():
+    from training.indextts25.data import PairDataset
+
+    def f(v):
+        return {"text_ids": torch.ones(3, dtype=torch.int32), "codes": torch.ones(4, dtype=torch.int16),
+                "spk": torch.full((192,), v).half(), "emo": torch.full((8,), v).half()}
+    feats = {"t": f(1.0), "p": f(2.0)}
+    assert PairDataset(feats, [("t", "p")])[0]["emo"][0] == 2.0                 # mặc định: từ câu mẫu
+    ds = PairDataset(feats, [("t", "p")], emotion_from_target_prob=1.0)
+    assert ds[0]["emo"][0] == 1.0 and ds[0]["spk"][0] == 2.0                    # cảm xúc từ câu đích, giọng vẫn từ câu mẫu

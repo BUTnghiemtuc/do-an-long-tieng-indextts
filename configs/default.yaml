@@ -31,10 +31,12 @@ transcribe:
   pause_split: 0.6         # khoảng lặng giữa 2 từ để tách câu
 
 translate:
-  backend: anthropic       # anthropic | copy (giữ câu gốc, để test)
-  model: claude-opus-5-5
-  effort: medium
-  vi_syllables_per_sec: 5.0  # ước lượng lại từ dữ liệu train: python -m data_prep.stats
+  backend: openrouter      # openrouter (API kiểu OpenAI, key OPENROUTER_API_KEY) | anthropic | copy (giữ câu gốc, để test)
+  model: google/gemini-2.5-flash   # với backend anthropic: đặt translate.model=claude-opus-5-5
+  base_url: https://openrouter.ai/api/v1
+  temperature: 0.3
+  effort: medium           # chỉ dùng cho anthropic
+  vi_syllables_per_sec: 4.0  # trung vị trên 371 giờ train (docs/data_stats.md): 4,0 âm tiết/giây
   length_tolerance: 0.15     # câu dịch vượt quá ngân sách âm tiết 15% thì yêu cầu rút gọn
   max_shorten_rounds: 2
   scene_gap: 2.0             # khoảng lặng > 2 s thì sang cảnh mới

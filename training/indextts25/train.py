@@ -125,7 +125,8 @@ def main(argv: list[str] | None = None) -> dict:
     if d.get("dev_features") and d["dev_features"] != d["features"]:
         feats.update(load_features(d["dev_features"]))
     train_pairs = load_pairs(d["train_pairs"])[: d.get("train_limit")]
-    ds = PairDataset(feats, train_pairs, model.max_text_tokens, model.max_mel_tokens)
+    ds = PairDataset(feats, train_pairs, model.max_text_tokens, model.max_mel_tokens,
+                     t.get("emotion_from_target_prob", 0.0))
     sampler = BucketBatchSampler(ds, t["batch_size"], seed)
     loader = DataLoader(ds, batch_sampler=sampler, collate_fn=collate, num_workers=d.get("num_workers", 0))
     dev_loader = None

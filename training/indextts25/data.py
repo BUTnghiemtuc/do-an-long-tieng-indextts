@@ -33,13 +33,17 @@ def load_pairs(path: str | Path) -> list[tuple[str, str]]:
 
 class PairDataset(Dataset):
     def __init__(self, feats: dict[str, dict], pairs: list[tuple[str, str]],
-                 max_text_tokens: int = 600, max_mel_tokens: int = 1815):
+                 max_text_tokens: int = 600, max_mel_tokens: int = 1815, emotion_from_target_prob: float = 0.0):
         # bỏ cặp thiếu đặc trưng hoặc dài quá giới hạn của model (+2 cho start/stop)
         self.feats = feats
         self.pairs = [(t, p) for t, p in pairs if t in feats and p in feats
                       and len(feats[t]["text_ids"]) + 2 <= max_text_tokens
                       and len(feats[t]["codes"]) + 2 <= max_mel_tokens]
         self.dropped = len(pairs) - len(self.pairs)
+        # Vector cảm xúc lấy từ chính câu đích với xác suất này (còn lại: từ câu mẫu, như lúc suy luận mặc định).
+        # Lấy từ câu mẫu thì vector gần như không báo trước ngữ điệu câu đích -> model học cách bỏ qua nó
+        # (đo trên ESD: đúng cảm xúc 86% -> 57%, buồn 18/18 -> 3/18). Lấy từ câu đích dạy model bám theo nó.
+        self.emo_target_p = emotion_from_target_prob
 
     def __len__(self) -> int:
         return len(self.pairs)
@@ -51,8 +55,9 @@ class PairDataset(Dataset):
     def __getitem__(self, i: int) -> dict:
         tgt, prm = self.pairs[i]
         t, p = self.feats[tgt], self.feats[prm]
+        emo = t["emo"] if self.emo_target_p > 0 and random.random() < self.emo_target_p else p["emo"]
         return {"text_ids": t["text_ids"].long(), "codes": t["codes"].long(),
-                "spk": p["spk"].float(), "emo": p["emo"].float()}
+                "spk": p["spk"].float(), "emo": emo.float()}
 
 
 def collate(items: list[dict]) -> Batch:
@@ -91,18 +96,30 @@ class BucketBatchSampler(Sampler[list[int]]):
 
 
 def make_pairs(manifest: list[dict], pairs_per_utt: int = 2, prompt_min: float = 3.0, prompt_max: float = 15.0,
-               seed: int = 1234) -> list[dict]:
+               seed: int = 1234, prompts: list[dict] | None = None, spk: dict[str, torch.Tensor] | None = None,
+               min_sim: float = 0.0) -> list[dict]:
     """Mỗi câu đích ghép với `pairs_per_utt` câu khác cùng người nói làm giọng mẫu.
 
     Ưu tiên giọng mẫu dài 3–15 s (IndexTTS cắt prompt ở 15 s). Bản tiếng Đức dùng 2 cặp/câu.
+    `prompts`: kho câu mẫu (mặc định chính manifest; dev lấy câu mẫu từ train).
+    `spk` + `min_sim`: chỉ nhận câu mẫu có cosine vector giọng CAMPPlus với câu đích >= min_sim.
+    Cần khi nhãn người nói là nhãn nhóm (kênh YouTube của viVoice): ~1/3 cặp cùng kênh là hai người khác nhau.
+    Câu đích không có câu mẫu nào đạt ngưỡng thì bị bỏ.
     """
     rng = random.Random(seed)
     by_spk: dict[str, list[dict]] = {}
-    for r in manifest:
+    for r in prompts if prompts is not None else manifest:
         by_spk.setdefault(r["speaker"], []).append(r)
+    unit = {}
+    if spk is not None and min_sim > 0:
+        unit = {k: torch.nn.functional.normalize(v.float(), dim=0) for k, v in spk.items()}
     pairs = []
     for r in manifest:
-        others = [o for o in by_spk[r["speaker"]] if o["id"] != r["id"]]
+        others = [o for o in by_spk.get(r["speaker"], []) if o["id"] != r["id"]]
+        if unit:
+            t = unit.get(r["id"])
+            others = [] if t is None else [o for o in others if o["id"] in unit
+                                           and float(t @ unit[o["id"]]) >= min_sim]
         good = [o for o in others if prompt_min <= o["duration"] <= prompt_max] or others
         for o in rng.sample(good, min(pairs_per_utt, len(good))):
             pairs.append({"target": r["id"], "prompt": o["id"]})

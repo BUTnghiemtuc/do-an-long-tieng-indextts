@@ -1,5 +1,5 @@
 # docker compose up --build  ->  http://localhost:8000
-# Cần NVIDIA Container Toolkit. Đặt ANTHROPIC_API_KEY, HF_TOKEN trong file .env.
+# Cần NVIDIA Container Toolkit. Đặt OPENROUTER_API_KEY (dịch), HF_TOKEN trong file .env (chép từ .env.example).
 x-common: &common
   build: .
   image: vidub:latest
@@ -7,6 +7,7 @@ x-common: &common
   environment:
     REDIS_URL: redis://redis:6379/0
     VIDUB_DATA: /app/data/jobs
+    VIDUB_DB: /app/data/vidub.db          # người dùng, phiên, nhật ký (SQLite)
     VIDUB_CONFIG: /app/configs/gpu.yaml
     HF_HOME: /app/.cache/huggingface
   volumes:

@@ -32,16 +32,22 @@ from . import metrics
 
 
 def generate(rows: list[dict], cfg: dict, out_dir: Path, gpu_name: str) -> list[dict]:
-    tts = get_tts(cfg["synthesize"])
+    # câu đã sinh từ lần trước: giữ thời gian sinh cũ, không nạp lại model TTS (chấm lại chỉ tốn VRAM cho bộ chấm)
+    old = {}
+    if (out_dir / "scores.csv").exists():
+        with open(out_dir / "scores.csv", encoding="utf-8") as f:
+            old = {r["id"]: r for r in csv.DictReader(f)}
+    tts = None
     results = []
     for i, r in enumerate(rows):
         out = out_dir / "wavs" / f"{r['id']}.wav"
         if not out.exists():
+            tts = tts or get_tts(cfg["synthesize"])
             t0 = time.perf_counter()
             tts.synthesize(r["text"], Path(r["prompt_audio"]), Path(r.get("style_audio") or r["prompt_audio"]), out)
             elapsed = time.perf_counter() - t0
         else:
-            elapsed = None
+            elapsed = float(old[r["id"]]["gen_time"]) if old.get(r["id"], {}).get("gen_time") else None
         dur = audio.duration(out)
         results.append({**r, "wav": str(out), "gen_time": elapsed, "dur": round(dur, 3),
                         "rtf": round(elapsed / dur, 4) if elapsed and dur else None})
@@ -57,14 +63,19 @@ def score(results: list[dict], asr: str, use_es: bool) -> None:
         r["cer"] = round(metrics.cer(r["text"], hyp), 4)
         r["wer"] = round(metrics.wer(r["text"], hyp), 4)
         r["ss"] = round(metrics.speaker_similarity(r["prompt_audio"], r["wav"]), 4)
+        r["ss_wavlm"] = round(metrics.speaker_similarity_wavlm(r["prompt_audio"], r["wav"]), 4)
         r["utmos"] = round(metrics.utmos(r["wav"]), 3)
         if use_es and r.get("style_audio"):
             r["es"] = round(metrics.emotion_similarity(r["style_audio"], r["wav"]), 4)
+            # cảm xúc đích: nhãn của bộ dữ liệu nếu có (ESD), không thì nhãn emotion2vec của câu mẫu cảm xúc
+            r["emo_ref"] = metrics.norm_emotion(r.get("emotion")) or metrics.emotion_label(r["style_audio"])
+            r["emo_out"] = metrics.emotion_label(r["wav"])
+            r["emo_match"] = float(r["emo_out"] == r["emo_ref"])
 
 
 def compare(paths: list[str]) -> None:
     rows = [json.loads(Path(p).read_text()) for p in paths]
-    keys = ["cer", "wer", "ss", "utmos", "es", "rtf"]
+    keys = ["cer", "wer", "ss", "ss_wavlm", "utmos", "es", "emo_match", "rtf"]
     print("| Hệ thống | " + " | ".join(k.upper() for k in keys) + " |")
     print("| --- |" + " ---: |" * len(keys))
     for s in rows:
@@ -81,6 +92,10 @@ def main() -> None:
     ap.add_argument("--asr", default="parakeet", choices=["parakeet", "whisper"])
     ap.add_argument("--es", action="store_true", help="tính emotion similarity (cần style_audio)")
     ap.add_argument("--limit", type=int)
+    ap.add_argument("--generate-only", action="store_true",
+                    help="chỉ sinh âm thanh (chạy lại không cờ này để chấm; có thể chấm trên CPU)")
+    ap.add_argument("--max-vram-frac", type=float,
+                    help="giới hạn VRAM của tiến trình (vd. 0.42) khi chạy cạnh một tiến trình train")
     ap.add_argument("--out", default="results/tts")
     ap.add_argument("--compare", nargs="+")
     args = ap.parse_args()
@@ -96,16 +111,26 @@ def main() -> None:
     cfg = load_config(args.config, args.set)
     rows = list(read_jsonl(args.testset))[: args.limit]
     out_dir = Path(args.out) / args.name
+    if args.max_vram_frac and torch.cuda.is_available():
+        torch.cuda.set_per_process_memory_fraction(args.max_vram_frac)
     results = generate(rows, cfg, out_dir, gpu)
+    if args.generate_only:
+        print(f"Đã sinh {len(results)} câu -> {out_dir / 'wavs'}")
+        return
+    import gc
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()   # trả VRAM của model TTS trước khi nạp ASR/SS/UTMOS
     score(results, args.asr, args.es)
 
-    fields = ["id", "text", "asr", "cer", "wer", "ss", "utmos", "es", "dur", "gen_time", "rtf", "wav"]
+    fields = ["id", "text", "asr", "cer", "wer", "ss", "ss_wavlm", "utmos", "es", "emo_ref", "emo_out", "emo_match",
+              "dur", "gen_time", "rtf", "wav"]
     with open(out_dir / "scores.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
         w.writeheader()
         w.writerows(results)
     summary = {"name": args.name, "testset": args.testset, "gpu": gpu, "config": cfg["synthesize"],
-               **{k: metrics.summarize([r.get(k) for r in results]) for k in ("cer", "wer", "ss", "utmos", "es", "rtf")}}
+               **{k: metrics.summarize([r.get(k) for r in results]) for k in ("cer", "wer", "ss", "ss_wavlm", "utmos", "es", "emo_match", "rtf")}}
     (out_dir / "summary.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False))
     print(json.dumps({k: summary[k] for k in ("cer", "ss", "utmos", "rtf")}, indent=2))
 

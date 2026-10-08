@@ -50,7 +50,8 @@ def make_project(tmp_path):
 
 
 def test_translate_with_fake_llm(fake_translator, tmp_path):
-    cfg = load_config(overrides=["translate.backend=anthropic"])
+    cfg = load_config(overrides=["translate.backend=anthropic", "translate.model=claude-opus-5-5",
+                                 "translate.vi_syllables_per_sec=5.0"])
     project = Translate().run(make_project(tmp_path), Context(cfg=cfg))
     calls = fake_translator.client.beta.messages.calls
 
@@ -73,3 +74,37 @@ def test_translate_with_fake_llm(fake_translator, tmp_path):
     n = len(calls)
     Translate().run(project, Context(cfg=cfg))
     assert len(calls) == n
+
+
+def test_openrouter_translator_parses_json_and_retries(monkeypatch):
+    from vidub.backends.llm import Line, OpenAICompatTranslator
+
+    replies = iter(["không phải JSON", '```json\n{"lines": [{"id": 0, "vi": " Anh chưa bao giờ nghe em "}]}\n```'])
+    calls = []
+
+    def create(**kw):
+        calls.append(kw)
+        msg = SimpleNamespace(content=next(replies))
+        return SimpleNamespace(choices=[SimpleNamespace(finish_reason="stop", message=msg)])
+
+    t = OpenAICompatTranslator.__new__(OpenAICompatTranslator)
+    t.model, t.temperature, t.max_retries = "google/gemini-2.5-flash", 0.3, 3
+    t.client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create)))
+    out = t.translate_scene([Line(0, "Celia", "You never listened to me.", 2.0, 8)], {"Celia": ""}, "en")
+    assert out == {0: "Anh chưa bao giờ nghe em"}
+    assert len(calls) == 2 and calls[0]["model"] == "google/gemini-2.5-flash"
+    assert calls[0]["response_format"]["json_schema"]["schema"]["required"] == ["lines"]
+
+
+def test_env_file_does_not_override_real_env(tmp_path, monkeypatch):
+    from vidub.config import load_env_file
+
+    f = tmp_path / ".env"
+    f.write_text("# chú thích\nVIDUB_TEST_A=tu_file\nVIDUB_TEST_B='co nhay'\nVIDUB_TEST_C=\n")
+    monkeypatch.setenv("VIDUB_TEST_A", "that")
+    monkeypatch.delenv("VIDUB_TEST_B", raising=False)
+    monkeypatch.delenv("VIDUB_TEST_C", raising=False)
+    load_env_file(f)
+    import os
+    assert os.environ["VIDUB_TEST_A"] == "that" and os.environ["VIDUB_TEST_B"] == "co nhay"
+    assert "VIDUB_TEST_C" not in os.environ

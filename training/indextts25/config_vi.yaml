@@ -42,6 +42,7 @@ train:
   mel_loss_weight: 1.0
   speaker_noise_std: 0.01
   emotion_dropout: 0.1
+  emotion_from_target_prob: 0.0             # Run 3: 0.5 (vector cảm xúc từ câu đích, xem data.py)
   # --- riêng
   gradient_checkpointing: true
 

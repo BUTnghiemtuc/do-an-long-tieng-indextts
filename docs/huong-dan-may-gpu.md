@@ -1,4 +1,4 @@
-# Việc cần làm trên máy GPU (RTX 5090, 16 GB VRAM)
+# Việc cần làm trên máy GPU (RTX 5070 Ti, 16 GB VRAM)
 
 Mục tiêu: chạy được bản finetune IndexTTS 2.5 tiếng Việt và qua **gate ngày 28/10**:
 
@@ -30,8 +30,8 @@ df -h ~                    # dung lượng trống
 
 | Thứ cần kiểm | Yêu cầu | Ghi chú |
 | --- | --- | --- |
-| Driver NVIDIA | ≥ 570, dòng "CUDA Version" ≥ 12.8 | RTX 5090 (kiến trúc Blackwell) chỉ chạy với PyTorch bản CUDA 12.8 trở lên |
-| VRAM | 16 GB (xem dòng "Memory" của `nvidia-smi`) | Đủ để train: trọng số + gradient + AdamW chiếm ~5,3 GB, activation 2–4 GB ở batch 8 (xem mục 7). Lưu ý: RTX 5090 desktop có 32 GB, laptop có 24 GB; nếu `nvidia-smi` báo 16 GB thì có thể là RTX 5080/5070 Ti, các bước dưới vẫn áp dụng y nguyên |
+| Driver NVIDIA | ≥ 570, dòng "CUDA Version" ≥ 12.8 | RTX 5070 Ti (kiến trúc Blackwell, sm_120) chỉ chạy với PyTorch bản CUDA 12.8 trở lên |
+| VRAM | 16 GB (xem dòng "Memory" của `nvidia-smi`) | Đủ để train: trọng số + gradient + AdamW chiếm ~5,3 GB, activation 2–4 GB ở batch 8 (xem mục 7). Xorg/GNOME chiếm sẵn ~0,3 GB nếu máy có màn hình |
 | RAM máy | ≥ 16 GB, tốt nhất 32 GB | Nếu RAM ≤ 16 GB thì **tạo thêm swap 16 GB** (ngay dưới) và đọc mục "Lưu ý khi RAM ít" ở cuối |
 | Ổ đĩa trống | ≥ 400 GB | Dữ liệu thô + WAV ~400 giờ (~70 GB) + đặc trưng + checkpoint (mỗi file ~1 GB) |
 | Hệ điều hành | Ubuntu 22.04 / 24.04 | Windows thì dùng WSL2 (Ubuntu) và cài driver NVIDIA bản cho WSL |
@@ -54,13 +54,20 @@ sudo apt install -y git ffmpeg rubberband-cli tmux
 conda create -n vidub python=3.11 -y && conda activate vidub
 
 git clone git@github.com:BUTnghiemtuc/do-an-long-tieng-indextts.git vidub && cd vidub
+# Mọi model/cache tải về nằm trong dự án (.cache/, đã gitignore), không làm đầy ổ hệ thống
+conda env config vars set HF_HUB_CACHE=$PWD/.cache/huggingface/hub \
+    HF_DATASETS_CACHE=$PWD/.cache/huggingface/datasets TORCH_HOME=$PWD/.cache/torch
+conda activate vidub                               # kích hoạt lại để biến có hiệu lực
 git clone https://github.com/index-tts/index-tts third_party/index-tts
 git -C third_party/index-tts checkout d9e41aa      # bản đã đối chiếu khi viết script train
 
-# PyTorch 2.8 bản CUDA 12.8: bắt buộc cho RTX 5090
+# PyTorch 2.8 bản CUDA 12.8: bắt buộc cho RTX 5070 Ti (Blackwell)
 pip install "torch==2.8.*" "torchaudio==2.8.*" --index-url https://download.pytorch.org/whl/cu128
 pip install -e third_party/index-tts
 pip install -e ".[train,eval,llm,server,dev]"
+# descript-audiotools ghim protobuf<3.20, nhưng sentencepiece (extend_tokenizer) cần bản mới.
+# audiotools không dùng protobuf trực tiếp, nên bỏ qua cảnh báo xung đột của pip.
+pip install "protobuf>=4.25,<6"
 ```
 
 Cài thêm các mô hình cho pipeline lồng tiếng. Làm sau cùng, vì whisperx và pyannote hay kéo theo phiên bản torch khác:
@@ -121,16 +128,18 @@ Nghe hai file `base_vi.wav` và `base_en.wav`. Có thể chúng sai nhiều; đ�
 Chi tiết từng bộ (số giờ, license, lấy bao nhiêu) xem mục "Dữ liệu" trong tài liệu kế hoạch. Trước khi chạy, mở trang dataset trên HuggingFace để kiểm tra tên cột (`--speaker-col`, `--text-col`).
 
 ```bash
-# 5.1 Tải về WAV 24 kHz + manifest. --streaming để không nạp cả bộ dataset vào RAM
+# 5.1 Tải về WAV 24 kHz + manifest. --streaming để không nạp cả bộ dataset vào RAM;
+# --shuffle xáo thứ tự file, cần với PhoAudiobook (xếp theo người đọc) để giới hạn giờ/người có tác dụng
 python -m data_prep.import_hf nguyendv02/ViMD_Dataset --speaker-col speakerID --name vimd \
     --out data/raw/vimd --streaming
 python -m data_prep.import_hf capleaf/viVoice --speaker-col channel --name vivoice \
-    --out data/raw/vivoice --streaming --max-hours 150 --max-per-speaker 1.0
+    --out data/raw/vivoice --streaming --shuffle --max-hours 150 --max-per-speaker 1.0
 python -m data_prep.import_hf thivux/phoaudiobook --speaker-col speaker --name phoaudiobook \
-    --out data/raw/phoaudiobook --streaming --max-hours 100 --max-per-speaker 0.3
+    --out data/raw/phoaudiobook --streaming --shuffle --max-hours 100 --max-per-speaker 0.3
 
 # 5.2 Lọc: độ dài 1–25 s, chuẩn hoá văn bản, ASR kiểm tra transcript (CER ≤ 10%), bỏ 12% chất lượng thấp nhất
-pip install "nemo_toolkit[asr]"           # cho parakeet-ctc-0.6b-vi; không cài được thì thêm --asr whisper
+# cho parakeet-ctc-0.6b-vi; -c giữ protobuf < 6 (NeMo 3.0 kéo lên 7.x). Không cài được thì thêm --asr whisper
+pip install "nemo_toolkit[asr]" -c <(echo "protobuf>=4.25,<6")
 python -m data_prep.filter data/raw/vimd/raw.jsonl data/clean/vimd.jsonl
 python -m data_prep.filter data/raw/vivoice/raw.jsonl data/clean/vivoice.jsonl
 python -m data_prep.filter data/raw/phoaudiobook/raw.jsonl data/clean/phoaudiobook.jsonl --max-cer 0.05
@@ -141,6 +150,8 @@ python -m data_prep.stats data/splits/train.jsonl --md docs/data_stats.md
 ```
 
 Trong lúc chờ duyệt viVoice và PhoAudiobook, làm trước với ViMD (~100 giờ, gần 13.000 người nói). ViMD đủ để chạy bước 6 và 7.
+
+ViMD có nhiều câu dài 20–30 s, nên bước lọc độ dài (≤ 25 s) bỏ đi một phần đáng kể; đó là bình thường.
 
 **Đạt khi:**
 
@@ -159,6 +170,15 @@ python -m training.indextts25.prepare_features data/splits/dev.jsonl data/featur
 
 Script tự chạy tiếp nếu bị ngắt giữa chừng. Chạy lại cùng lệnh là được.
 
+Sau đó ghép lại cặp, lọc theo độ giống giọng. Nhãn người nói của viVoice là **kênh YouTube**: khoảng 1/3 số cặp cùng kênh là hai người khác nhau (cosine CAMPPlus < 0,5; ViMD, nhãn thật, chỉ 0,3%). Dev lấy câu mẫu từ train, vì 100 câu dev ít khi có 2 câu cùng người:
+
+```bash
+python -m training.indextts25.make_pairs data/splits/train.jsonl data/features/train/pairs_train.jsonl \
+    --features data/features/train --min-spk-sim 0.5
+python -m training.indextts25.make_pairs data/splits/dev.jsonl data/features/dev/pairs_dev.jsonl \
+    --prompt-manifest data/splits/train.jsonl --features data/features/train data/features/dev --min-spk-sim 0.5
+```
+
 **Đạt khi:**
 
 - `data/features/train/meta.json` có số câu khớp manifest;
@@ -168,7 +188,7 @@ Script tự chạy tiếp nếu bị ngắt giữa chừng. Chạy lại cùng l
 
 Đây là phép thử quan trọng nhất: chứng minh script train chạy đúng với trọng số thật.
 
-Với 16 GB VRAM, cấu hình gốc (`batch_size 8 × gradient_accumulation 4`, gradient checkpointing bật) dự kiến dùng ~9–10 GB. Đó là ước tính tính từ số tham số, chưa đo trên máy thật. Bước overfit này cũng để đo con số thật: cột `max_vram_gb` trong log là VRAM đỉnh đã dùng.
+Đã đo trên RTX 5070 Ti (4/10, chạy thử 6 bước với câu ViMD dài ~22 s): cấu hình gốc (`batch_size 8 × gradient_accumulation 4`, gradient checkpointing bật) dùng **7,2 GB VRAM đỉnh**, ~3 giây mỗi bước. Bước overfit vẫn xem lại cột `max_vram_gb` trong log để chắc chắn với dữ liệu thật.
 
 | `max_vram_gb` trong log | Làm gì |
 | --- | --- |
@@ -201,9 +221,8 @@ python -m training.indextts25.export runs/overfit/step_001500.pt \
 
 **Đạt khi:**
 
-- `mel_loss` giảm rõ, không đi ngang;
-- `dev_mel_acc` tăng dần;
-- câu đã train nghe ra đúng chữ tiếng Việt.
+- `mel_loss` trên train giảm rõ, không đi ngang (dev đi ngang hoặc xấu đi là bình thường khi chỉ train 600 câu);
+- câu đã train nghe ra đúng chữ tiếng Việt. Kết quả 5/10: CER trên 6 câu đã train giảm từ 75% (model gốc) xuống 6%.
 
 **Nếu không đạt**, kiểm tra theo thứ tự:
 
@@ -228,7 +247,7 @@ python -m training.indextts25.train -c training/indextts25/config_vi.yaml --set 
 # máy tắt/ngắt: chạy lại cùng lệnh, thêm --resume runs/run2/step_XXXXXX.pt
 ```
 
-Run 2 có khoảng 25.000 bước. Trên card 16 GB ước tính 12–25 giờ (ước tính, chưa đo). Con số chính xác lấy từ tốc độ đo được ở bước 7 (`elapsed_s` trong `runs/overfit/log.jsonl`).
+Tốc độ đo trên RTX 5070 Ti với dữ liệu thật: ~0,75 giây/bước (overfit chậm hơn, ~2,5 giây/bước, vì câu ViMD dài). 1 epoch (~9.200 bước) mất ~2 giờ. Con số chính xác lấy từ tốc độ đo được ở bước 7 (`elapsed_s` trong `runs/overfit/log.jsonl`).
 
 ## 9. Chọn checkpoint và đánh giá
 
@@ -264,7 +283,7 @@ Không đạt gate thì chạy pipeline với `-c configs/gpu.yaml` (TTS là din
 
 ## Lưu ý khi VRAM 16 GB
 
-- Không chạy hai tiến trình dùng GPU cùng lúc (ví dụ `prepare_features` khi đang train): `prepare_features` nạp đủ IndexTTS 2.5 (~7–8 GB), train dùng ~9–10 GB.
+- Không chạy hai tiến trình dùng GPU cùng lúc (ví dụ `prepare_features` khi đang train): `prepare_features` nạp đủ IndexTTS 2.5 (~7–8 GB), train dùng ~7–8 GB.
 - Pipeline lồng tiếng nạp lần lượt WhisperX (~5 GB), pyannote, rồi IndexTTS (~6 GB). Nếu báo hết VRAM, chạy từng bước một trong tiến trình riêng: `vidub run clip.mp4 -c ... --steps transcribe`, rồi `--steps translate synthesize align mix`.
 - Khi đánh giá, có thể chấm từng checkpoint một; không cần nạp nhiều model cùng lúc.
 
@@ -283,6 +302,7 @@ Không đạt gate thì chạy pipeline với `-c configs/gpu.yaml` (TTS là din
 | `CUDA out of memory` | Giảm `batch_size`, tăng `gradient_accumulation` (mục 7) |
 | Máy treo, tiến trình bị `Killed` | Hết RAM → kiểm tra swap (mục 1), `num_workers=0` |
 | `401` / `gated repo` khi tải | `huggingface-cli login` và bấm chấp nhận điều khoản trên trang dataset/model |
+| `cannot import name 'builder' from 'google.protobuf.internal'` | protobuf quá cũ: `pip install "protobuf>=4.25,<6"` (mục 2) |
 | Lỗi import trong `transformers` | Phải đúng `transformers==4.52.1` (bản index-tts ghim) |
 | WhisperX/CTranslate2 báo lỗi GPU | Cập nhật `ctranslate2` bản mới nhất, hoặc tách môi trường riêng cho bước transcribe (mục 2) |
 | Loss không giảm | Xem mục "Nếu không đạt" ở bước 7 |
