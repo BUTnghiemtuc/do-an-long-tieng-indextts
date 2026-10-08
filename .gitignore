@@ -17,3 +17,5 @@ third_party/
 logs/
 web/node_modules/
 web/dist/
+# tài khoản test (có mật khẩu) — không commit
+tai-khoan-test*.txt
