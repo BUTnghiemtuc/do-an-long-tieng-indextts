@@ -65,7 +65,7 @@ VIDUB_CONFIG=configs/mock.yaml uvicorn server.app:app --reload   # http://localh
 docker compose up --build                                         # bản GPU: api + worker + redis (Dockerfile tự build web/)
 
 # Sửa giao diện: chạy song song uvicorn (cổng 8000) và Vite dev server (hot reload, chuyển /api sang 8000)
-cd web && npm run dev                                             # http://localhost:5173
+cd web && npm run dev                                             # http://localhost:5300
 ```
 
 **Lần chạy đầu:**
